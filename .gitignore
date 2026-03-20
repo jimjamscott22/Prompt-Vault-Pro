@@ -194,6 +194,27 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Node
+node_modules/
+dist/
+.parcel-cache/
+
+# Vite
+frontend/dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# PromptVault config (user-specific)
+config.toml
+
 # Cursor
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
