@@ -9,7 +9,7 @@ AI Prompt & Snippet Library with Project Binding. A local-first, CLI-friendly pe
 - **Backend:** Python 3.11+, FastAPI, SQLAlchemy (async), SQLite with FTS5
 - **Frontend:** React 18, Vite, Tailwind CSS
 - **CLI:** Python, Typer
-- **Package manager:** pip + venv (backend), npm (frontend)
+- **Package manager:** uv (backend), npm (frontend) — or pip + venv as alternative
 - **Config:** TOML (`~/.config/promptvault/config.toml`)
 - **Testing:** pytest (backend), Vitest (frontend)
 
@@ -123,6 +123,33 @@ pv bundle add <bundle> <entry-id>
 
 ## Dev Commands
 
+### Using `uv` (recommended)
+
+```bash
+# Backend
+cd backend && uv venv .venv
+source .venv/bin/activate  # or `.venv\Scripts\activate` on Windows
+uv pip install -r requirements.txt
+uvicorn main:app --reload --port 8765
+
+# Frontend
+cd frontend && npm install
+npm run dev
+
+# CLI (local install)
+uv pip install -e ./cli
+
+# Tests
+uv run pytest backend/tests/
+npm run test --run            # frontend
+
+# Lint
+uv run ruff check backend/
+npm run lint                  # frontend (ESLint)
+```
+
+### Using `pip` + `venv` (alternative)
+
 ```bash
 # Backend
 cd backend && python -m venv .venv && source .venv/bin/activate
@@ -138,7 +165,6 @@ pip install -e ./cli
 
 # Tests
 pytest backend/tests/
-npm run test --run            # frontend
 
 # Lint
 ruff check backend/
