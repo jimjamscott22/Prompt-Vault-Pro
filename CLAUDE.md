@@ -50,9 +50,15 @@ promptvaultpro/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
+│   │   │   ├── EntryCard.tsx    # Entry display card with edit/delete actions
+│   │   │   └── EntryForm.tsx    # Entry create/edit modal form
 │   │   ├── pages/
+│   │   │   └── EntriesPage.tsx  # Entry list with full CRUD (create, edit, delete)
 │   │   ├── hooks/
+│   │   │   └── useEntries.ts    # Entries fetch hook with refetch
 │   │   └── api/                 # Typed API client (fetch wrappers)
+│   │       ├── client.ts        # Base fetch wrapper (get, post, put, del)
+│   │       └── entries.ts       # Entry API functions + TypeScript types
 │   └── vite.config.ts
 └── docs/
     ├── architecture.md
