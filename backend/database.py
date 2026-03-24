@@ -8,9 +8,13 @@ Supports two backends:
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import text
+
+# Load .env from project root (one level up from backend/)
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 DB_ENGINE = os.environ.get("PROMPTVAULT_DB_ENGINE", "sqlite").lower()
