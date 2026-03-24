@@ -202,6 +202,22 @@ npm run lint                  # frontend (ESLint)
 
 ---
 
+## Frontend UI Design System
+
+The frontend uses a "Refined Terminal" dark aesthetic. Preserve these decisions when modifying or extending the UI:
+
+- **Fonts:** Syne (display/headings, weights 600–800) · Plus Jakarta Sans (body/UI) · JetBrains Mono (code)
+- **Palette (CSS vars in `index.css`):** deep slate base `#0b0d12`, sidebar `#0f1117`, card `#13161e`, amber accent `#F59E0B`
+- **Entry type colors:** `prompt` → amber `#F59E0B` · `snippet` → emerald `#10b981` · `context` → violet `#8b5cf6`
+  - Applied as a 3px left border on each `EntryCard`, a colored badge, and a hover glow
+- **Layout:** sticky left sidebar (220px) + scrollable main content; no top navbar
+- **Interactions:** cards lift `translateY(-1px)` + type-colored shadow on hover; amber focus rings on all inputs; amber CTA buttons with `#0b0d12` text
+- **Do not** swap fonts back to Inter/Roboto/system-ui — the Syne + Jakarta Sans pairing is intentional
+- **Do not** use purple gradient backgrounds or blue primary buttons — amber is the accent color
+- All design tokens live in `frontend/src/index.css` as CSS custom properties (`--bg-*`, `--text-*`, `--type-*`, `--accent-*`)
+
+---
+
 ## What Not To Do
 
 - Do not add external databases (Postgres, Redis) — SQLite only, keep it portable

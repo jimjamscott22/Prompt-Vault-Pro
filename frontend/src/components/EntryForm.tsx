@@ -7,6 +7,28 @@ interface Props {
   onClose: () => void
 }
 
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  background: 'var(--bg-input)',
+  border: '1px solid var(--border-default)',
+  borderRadius: '8px',
+  padding: '0.5rem 0.75rem',
+  fontFamily: 'var(--font-body)',
+  fontSize: '0.875rem',
+  color: 'var(--text-primary)',
+  outline: 'none',
+  boxSizing: 'border-box',
+}
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  color: 'var(--text-secondary)',
+  marginBottom: '0.375rem',
+  letterSpacing: '0.02em',
+}
+
 function EntryForm({ entry, onSubmit, onClose }: Props) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -15,6 +37,7 @@ function EntryForm({ entry, onSubmit, onClose }: Props) {
   const [tags, setTags] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [focusedField, setFocusedField] = useState<string | null>(null)
 
   useEffect(() => {
     if (entry) {
@@ -25,6 +48,12 @@ function EntryForm({ entry, onSubmit, onClose }: Props) {
       setTags(entry.tags.map((t) => t.name).join(', '))
     }
   }, [entry])
+
+  function getFocusStyle(field: string): React.CSSProperties {
+    return focusedField === field
+      ? { borderColor: 'var(--accent-amber)', boxShadow: '0 0 0 3px var(--accent-amber-glow)' }
+      : {}
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -50,90 +79,200 @@ function EntryForm({ entry, onSubmit, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-full max-w-2xl rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{entry ? 'Edit Entry' : 'New Entry'}</h2>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(7, 8, 12, 0.75)',
+        backdropFilter: 'blur(4px)',
+        padding: '1rem',
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '640px',
+          background: 'var(--bg-sidebar)',
+          border: '1px solid var(--border-default)',
+          borderRadius: '14px',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+          padding: '1.5rem',
+        }}
+      >
+        {/* Modal header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+          <h2
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: '1.0625rem',
+              color: 'var(--text-primary)',
+              margin: 0,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            {entry ? 'Edit Entry' : 'New Entry'}
+          </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-100"
             aria-label="Close"
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-default)',
+              borderRadius: '7px',
+              width: '28px',
+              height: '28px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'var(--text-secondary)',
+              fontSize: '0.875rem',
+              transition: 'all 120ms ease',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'
+              ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-card-hover)'
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'
+              ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-surface)'
+            }}
           >
             ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Title */}
           <div>
-            <label className="mb-1 block text-sm text-gray-400">Title</label>
+            <label style={labelStyle}>Title</label>
             <input
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none"
+              onFocus={() => setFocusedField('title')}
+              onBlur={() => setFocusedField(null)}
+              style={{ ...inputStyle, ...getFocusStyle('title') }}
+              placeholder="Give this entry a clear name"
             />
           </div>
 
+          {/* Body */}
           <div>
-            <label className="mb-1 block text-sm text-gray-400">Body</label>
+            <label style={labelStyle}>Body</label>
             <textarea
               required
               rows={8}
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 font-mono text-sm text-gray-100 focus:border-blue-500 focus:outline-none"
+              onFocus={() => setFocusedField('body')}
+              onBlur={() => setFocusedField(null)}
+              style={{
+                ...inputStyle,
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.8125rem',
+                lineHeight: 1.65,
+                resize: 'vertical',
+                ...getFocusStyle('body'),
+              }}
+              placeholder="Paste your prompt, snippet, or context here…"
             />
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="mb-1 block text-sm text-gray-400">Type</label>
+          {/* Type + Language row */}
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Type</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as typeof type)}
-                className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none"
+                onFocus={() => setFocusedField('type')}
+                onBlur={() => setFocusedField(null)}
+                style={{
+                  ...inputStyle,
+                  appearance: 'none',
+                  cursor: 'pointer',
+                  ...getFocusStyle('type'),
+                }}
               >
                 <option value="prompt">prompt</option>
                 <option value="snippet">snippet</option>
                 <option value="context">context</option>
               </select>
             </div>
-
-            <div className="flex-1">
-              <label className="mb-1 block text-sm text-gray-400">Language</label>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Language</label>
               <input
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                placeholder="e.g. python, typescript"
-                className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none"
+                onFocus={() => setFocusedField('lang')}
+                onBlur={() => setFocusedField(null)}
+                placeholder="python, typescript…"
+                style={{ ...inputStyle, ...getFocusStyle('lang') }}
               />
             </div>
           </div>
 
+          {/* Tags */}
           <div>
-            <label className="mb-1 block text-sm text-gray-400">Tags (comma-separated)</label>
+            <label style={labelStyle}>Tags <span style={{ fontWeight: 400, opacity: 0.6 }}>(comma-separated)</span></label>
             <input
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              placeholder="e.g. auth, react, api"
-              className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none"
+              onFocus={() => setFocusedField('tags')}
+              onBlur={() => setFocusedField(null)}
+              placeholder="auth, react, api"
+              style={{ ...inputStyle, ...getFocusStyle('tags') }}
             />
           </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && (
+            <p style={{ fontSize: '0.8125rem', color: '#f87171', margin: 0 }}>{error}</p>
+          )}
 
-          <div className="flex justify-end gap-3">
+          {/* Actions */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.625rem', paddingTop: '0.25rem' }}>
             <button
               type="button"
               onClick={onClose}
-              className="rounded px-4 py-2 text-sm text-gray-400 hover:text-gray-100"
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border-default)',
+                borderRadius: '8px',
+                padding: '0.5rem 1rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: 'var(--text-secondary)',
+                fontFamily: 'var(--font-body)',
+                cursor: 'pointer',
+                transition: 'all 120ms ease',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)' }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+              style={{
+                background: submitting ? 'rgba(245,158,11,0.6)' : 'var(--accent-amber)',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.5rem 1.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: '#0b0d12',
+                fontFamily: 'var(--font-body)',
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                transition: 'opacity 150ms ease',
+              }}
             >
               {submitting ? 'Saving…' : entry ? 'Save Changes' : 'Create Entry'}
             </button>

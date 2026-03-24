@@ -1,3 +1,147 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* Background layers */
+  --bg-base: #0b0d12;
+  --bg-sidebar: #0f1117;
+  --bg-card: #13161e;
+  --bg-card-hover: #171b24;
+  --bg-surface: #1a1e29;
+  --bg-input: #1a1e29;
+
+  /* Borders */
+  --border-subtle: #1e2330;
+  --border-default: #252b3b;
+  --border-focus: #f59e0b;
+
+  /* Text */
+  --text-primary: #e8eaf0;
+  --text-secondary: #8b91a8;
+  --text-muted: #4f5569;
+  --text-code: #cdd5e0;
+
+  /* Accents */
+  --accent-amber: #f59e0b;
+  --accent-amber-dim: rgba(245, 158, 11, 0.15);
+  --accent-amber-glow: rgba(245, 158, 11, 0.08);
+
+  /* Type colors */
+  --type-prompt: #f59e0b;
+  --type-prompt-bg: rgba(245, 158, 11, 0.1);
+  --type-snippet: #10b981;
+  --type-snippet-bg: rgba(16, 185, 129, 0.1);
+  --type-context: #8b5cf6;
+  --type-context-bg: rgba(139, 92, 246, 0.1);
+
+  /* Fonts */
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Transitions */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Entry card type border accent */
+.entry-card {
+  border-left: 3px solid transparent;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
+}
+.entry-card:hover {
+  transform: translateY(-1px);
+}
+.entry-card[data-type="prompt"] { border-left-color: var(--type-prompt); }
+.entry-card[data-type="snippet"] { border-left-color: var(--type-snippet); }
+.entry-card[data-type="context"] { border-left-color: var(--type-context); }
+.entry-card[data-type="prompt"]:hover { box-shadow: 0 4px 24px rgba(245, 158, 11, 0.07); }
+.entry-card[data-type="snippet"]:hover { box-shadow: 0 4px 24px rgba(16, 185, 129, 0.07); }
+.entry-card[data-type="context"]:hover { box-shadow: 0 4px 24px rgba(139, 92, 246, 0.07); }
+
+/* Type badge */
+.type-badge[data-type="prompt"] { color: var(--type-prompt); background: var(--type-prompt-bg); }
+.type-badge[data-type="snippet"] { color: var(--type-snippet); background: var(--type-snippet-bg); }
+.type-badge[data-type="context"] { color: var(--type-context); background: var(--type-context-bg); }
+
+/* Filter tab */
+.filter-tab {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.375rem 0.875rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-secondary);
+  background: transparent;
+}
+.filter-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+.filter-tab.active {
+  color: var(--accent-amber);
+  background: var(--accent-amber-dim);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+/* Vault input */
+.vault-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+.vault-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-amber-glow);
+}
+.vault-input::placeholder { color: var(--text-muted); }
+
+.vault-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b91a8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+}
+
+/* Sidebar grid-dot texture */
+.sidebar-texture {
+  background-image: radial-gradient(circle, var(--border-subtle) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
