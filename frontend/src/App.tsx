@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import EntriesPage from './pages/EntriesPage'
+import ResourcesPage from './pages/ResourcesPage'
 
 function Sidebar() {
   return (
@@ -76,6 +77,7 @@ function Sidebar() {
         </p>
         <NavLink
           to="/"
+          end
           style={({ isActive }) => ({
             display: 'flex',
             alignItems: 'center',
@@ -97,6 +99,42 @@ function Sidebar() {
             <rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity="0.4" />
           </svg>
           Entries
+        </NavLink>
+
+        <p
+          style={{
+            fontSize: '0.6875rem',
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            padding: '0 0.5rem',
+            margin: '1rem 0 0.375rem',
+          }}
+        >
+          Discover
+        </p>
+        <NavLink
+          to="/resources"
+          style={({ isActive }) => ({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.5rem 0.625rem',
+            borderRadius: '7px',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            textDecoration: 'none',
+            color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+            background: isActive ? 'var(--bg-surface)' : 'transparent',
+            transition: 'all 120ms ease',
+          })}
+        >
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" strokeWidth="1.4" opacity="0.7" />
+            <path d="M7.5 4v3.5l2 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.7" />
+          </svg>
+          Resources
         </NavLink>
       </nav>
 
@@ -131,6 +169,7 @@ function App() {
           <div style={{ maxWidth: '860px' }}>
             <Routes>
               <Route path="/" element={<EntriesPage />} />
+              <Route path="/resources" element={<ResourcesPage />} />
             </Routes>
           </div>
         </main>
