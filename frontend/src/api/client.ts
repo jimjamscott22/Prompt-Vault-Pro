@@ -18,14 +18,17 @@ interface ApiError {
 
 async function request<T>(
   path: string,
-  options: RequestInit = {},
+  options: RequestInit & { skipContentType?: boolean } = {},
 ): Promise<ApiResponse<T>> {
+  const { skipContentType, ...fetchOptions } = options
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
+    ...fetchOptions,
+    headers: skipContentType
+      ? options.headers
+      : {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
   })
 
   if (!res.ok) {
@@ -61,4 +64,13 @@ export function put<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
 
 export function del(path: string): Promise<ApiResponse<void>> {
   return request<void>(path, { method: 'DELETE' })
+}
+
+export function postForm<T>(path: string, body: FormData): Promise<ApiResponse<T>> {
+  // Do NOT set Content-Type — browser must set it with multipart boundary.
+  return request<T>(path, {
+    method: 'POST',
+    body,
+    skipContentType: true,
+  })
 }

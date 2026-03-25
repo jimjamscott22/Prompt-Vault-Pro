@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_db
-from routers import entries, bundles, projects, search
+from routers import entries, bundles, imports, projects, search
 
 
 @asynccontextmanager
@@ -33,6 +33,7 @@ app.add_middleware(
 
 app.include_router(entries.router, prefix="/api/v1")
 app.include_router(bundles.router, prefix="/api/v1")
+app.include_router(imports.router, prefix="/api/v1")
 app.include_router(projects.router, prefix="/api/v1")
 app.include_router(search.router, prefix="/api/v1")
 
