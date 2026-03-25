@@ -24,7 +24,7 @@ class ParsedSkill:
 # ---------------------------------------------------------------------------
 
 _DESC_LABELS: frozenset[str] = frozenset({
-    "description", "summary", "about", "overview", "desc", "synopsis",
+    "description", "summary", "about", "overview", "desc", "synopsis"
 })
 
 _TAG_LABELS: frozenset[str] = frozenset({

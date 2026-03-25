@@ -52,6 +52,20 @@ async def import_claude_skills(
                 },
             )
 
+        # Reject oversized files early using the reported size when available,
+        # then verify the actual byte count after reading to guard against
+        # mis-reported Content-Length values.
+        if file.size is not None and file.size > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": {
+                        "code": "file_too_large",
+                        "message": "File must be 1 MB or smaller.",
+                    }
+                },
+            )
+
         raw_bytes = await file.read(_MAX_UPLOAD_BYTES + 1)
         if len(raw_bytes) > _MAX_UPLOAD_BYTES:
             raise HTTPException(

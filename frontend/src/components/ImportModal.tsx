@@ -226,7 +226,7 @@ function ImportModal({ onClose, onImported }: ImportModalProps) {
                 ) : (
                   <div>
                     <p style={{ color: 'var(--text-secondary)', fontWeight: 500, margin: '0 0 0.25rem' }}>
-                      Click to choose or drag &amp; drop
+                      Click to choose or drag & drop
                     </p>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>
                       .md files only, max 1 MB
