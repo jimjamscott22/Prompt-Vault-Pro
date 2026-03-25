@@ -1,10 +1,10 @@
 """Business logic for entry CRUD operations."""
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from models.entry import Entry, Tag, EntryTag
+from models.entry import Entry, Tag
 from schemas.entry import EntryCreate, EntryUpdate
 
 
@@ -79,6 +79,9 @@ async def create_entry(session: AsyncSession, data: EntryCreate) -> Entry:
 
     if data.tags:
         tags = await _get_or_create_tags(session, data.tags)
+        # Eagerly load the tags collection before assignment to avoid a lazy-load
+        # in a non-greenlet context (e.g. async test runners).
+        await session.refresh(entry, ["tags"])
         entry.tags = tags
 
     await session.commit()
@@ -100,6 +103,7 @@ async def update_entry(session: AsyncSession, entry_id: str, data: EntryUpdate) 
 
     if tags_data is not None:
         tags = await _get_or_create_tags(session, tags_data)
+        await session.refresh(entry, ["tags"])
         entry.tags = tags
 
     await session.commit()

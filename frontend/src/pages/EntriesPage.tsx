@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useEntries } from '../hooks/useEntries'
 import EntryCard from '../components/EntryCard'
 import EntryForm from '../components/EntryForm'
+import ImportModal from '../components/ImportModal'
 import { createEntry, updateEntry, deleteEntry } from '../api/entries'
 import type { Entry, EntryCreate } from '../api/entries'
 
@@ -61,6 +62,7 @@ function EmptyState({ filter }: { filter: FilterType }) {
 function EntriesPage() {
   const { entries, loading, refetch } = useEntries()
   const [modalOpen, setModalOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Entry | null>(null)
   const [filter, setFilter] = useState<FilterType>('all')
 
@@ -131,37 +133,70 @@ function EntriesPage() {
               </span>
             )}
           </div>
-          <button
-            onClick={openCreate}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.375rem',
-              background: 'var(--accent-amber)',
-              color: '#0b0d12',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '0.5rem 1rem',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              fontFamily: 'var(--font-body)',
-              cursor: 'pointer',
-              transition: 'opacity 150ms ease, transform 150ms ease',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'
-              ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.opacity = '1'
-              ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-              <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            New Entry
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              onClick={() => setImportOpen(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                background: 'var(--bg-surface)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-default)',
+                borderRadius: '8px',
+                padding: '0.5rem 1rem',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                fontFamily: 'var(--font-body)',
+                cursor: 'pointer',
+                transition: 'border-color 150ms ease, color 150ms ease',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent-amber)'
+                ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--accent-amber)'
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border-default)'
+                ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M6.5 1v7M3.5 5.5l3 3 3-3M1 10h11" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Import
+            </button>
+            <button
+              onClick={openCreate}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                background: 'var(--accent-amber)',
+                color: '#0b0d12',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.5rem 1rem',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                fontFamily: 'var(--font-body)',
+                cursor: 'pointer',
+                transition: 'opacity 150ms ease, transform 150ms ease',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'
+                ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = '1'
+                ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              New Entry
+            </button>
+          </div>
         </div>
 
         {/* Filter tabs */}
@@ -211,6 +246,13 @@ function EntriesPage() {
           entry={editTarget}
           onSubmit={handleSubmit}
           onClose={closeModal}
+        />
+      )}
+
+      {importOpen && (
+        <ImportModal
+          onClose={() => setImportOpen(false)}
+          onImported={() => { refetch() }}
         />
       )}
     </>
