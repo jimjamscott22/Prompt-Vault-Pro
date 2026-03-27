@@ -55,6 +55,36 @@ npm install
 npm run dev
 ```
 
+### Running in Production (Local Use)
+
+Once you're done developing, you can build the frontend and serve everything from a single process:
+
+```bash
+# Build the frontend
+cd frontend
+npm run build
+
+# Run the backend (serves API + built frontend)
+cd ../backend
+uvicorn main:app --port 8765
+```
+
+To access from other devices on your network:
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8765
+```
+# Other Methods Below
+
+**Process manager** — If you want to keep them separate, use something like:
+
+**pm2** — **pm2** start "uvicorn main:app" --name backend (manages both, auto-restarts)
+**Honcho** / **foreman** — define a Procfile with both commands
+A simple shell script that starts both
+3. **systemd services** (Linux) — if you want them to auto-start on boot on your Pi, create a .service file for each. Most "set and forget" option.
+
+> **Tip:** Drop `--reload` for production use — it's a dev-only feature that watches for file changes.
+
 ### CLI Installation
 
 ```bash

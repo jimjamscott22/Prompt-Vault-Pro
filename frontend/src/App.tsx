@@ -1,6 +1,223 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { useState, createContext, useContext } from 'react'
+import { BrowserRouter, Routes, Route, NavLink, useNavigate } from 'react-router-dom'
 import EntriesPage from './pages/EntriesPage'
 import ResourcesPage from './pages/ResourcesPage'
+import { useEntries } from './hooks/useEntries'
+import type { Entry } from './api/entries'
+
+interface EntriesContextValue {
+  entries: Entry[]
+  loading: boolean
+  total: number
+  refetch: () => void
+}
+
+const EntriesContext = createContext<EntriesContextValue>({
+  entries: [],
+  loading: true,
+  total: 0,
+  refetch: () => {},
+})
+
+export function useSharedEntries() {
+  return useContext(EntriesContext)
+}
+
+const TYPE_CONFIG: { key: Entry['type']; label: string; color: string }[] = [
+  { key: 'prompt', label: 'Prompts', color: 'var(--type-prompt)' },
+  { key: 'snippet', label: 'Snippets', color: 'var(--type-snippet)' },
+  { key: 'context', label: 'Context', color: 'var(--type-context)' },
+]
+
+function SidebarEntryList() {
+  const { entries, loading } = useSharedEntries()
+  const navigate = useNavigate()
+  const [vaultOpen, setVaultOpen] = useState(true)
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+
+  function toggleGroup(key: string) {
+    setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const grouped = TYPE_CONFIG.map((t) => ({
+    ...t,
+    items: entries.filter((e) => e.type === t.key),
+  }))
+
+  if (loading) {
+    return (
+      <div style={{ padding: '0 0.75rem' }}>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', padding: '0 0.5rem' }}>
+          Loading...
+        </p>
+      </div>
+    )
+  }
+
+  if (entries.length === 0) return null
+
+  return (
+    <div style={{ padding: '0 0.75rem' }}>
+      {/* Section header */}
+      <button
+        onClick={() => setVaultOpen((v) => !v)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          padding: '0 0.5rem',
+          marginBottom: '0.375rem',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+        }}
+      >
+        <span
+          style={{
+            fontSize: '0.6875rem',
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+          }}
+        >
+          Your Vault
+        </span>
+        <span
+          style={{
+            fontSize: '0.6875rem',
+            color: 'var(--text-muted)',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            padding: '0 0.375rem',
+            borderRadius: '99px',
+            lineHeight: '1.4',
+          }}
+        >
+          {entries.length}
+        </span>
+      </button>
+
+      {vaultOpen && grouped.map((group) => {
+        if (group.items.length === 0) return null
+        const isCollapsed = collapsed[group.key] ?? false
+
+        return (
+          <div key={group.key} style={{ marginBottom: '0.25rem' }}>
+            {/* Group header */}
+            <button
+              onClick={() => toggleGroup(group.key)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                width: '100%',
+                padding: '0.3rem 0.5rem',
+                borderRadius: '5px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background 120ms ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--bg-surface)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'none'
+              }}
+            >
+              <svg
+                width="8"
+                height="8"
+                viewBox="0 0 8 8"
+                fill="none"
+                style={{
+                  transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                  transition: 'transform 120ms ease',
+                  flexShrink: 0,
+                }}
+              >
+                <path d="M1.5 2.5L4 5.5L6.5 2.5" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                {group.label}
+              </span>
+              <span
+                style={{
+                  fontSize: '0.6875rem',
+                  color: 'var(--text-muted)',
+                  marginLeft: 'auto',
+                }}
+              >
+                {group.items.length}
+              </span>
+            </button>
+
+            {/* Entry items */}
+            {!isCollapsed && (
+              <div style={{ padding: '0.125rem 0 0.125rem 0.625rem' }}>
+                {group.items.map((entry) => (
+                  <button
+                    key={entry.id}
+                    onClick={() => navigate('/')}
+                    title={entry.title}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.375rem',
+                      width: '100%',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '5px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'background 120ms ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--bg-surface)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'none'
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '5px',
+                        height: '5px',
+                        borderRadius: '50%',
+                        background: group.color,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-secondary)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {entry.title}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 function Sidebar() {
   return (
@@ -61,7 +278,7 @@ function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav style={{ padding: '0.75rem 0.75rem', flex: 1 }}>
+      <nav style={{ padding: '0.75rem 0.75rem 0.5rem' }}>
         <p
           style={{
             fontSize: '0.6875rem',
@@ -138,11 +355,25 @@ function Sidebar() {
         </NavLink>
       </nav>
 
+      {/* Entries list */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          borderTop: '1px solid var(--border-subtle)',
+          paddingTop: '0.75rem',
+          minHeight: 0,
+        }}
+      >
+        <SidebarEntryList />
+      </div>
+
       {/* Footer */}
       <div
         style={{
           padding: '0.875rem 1.25rem',
           borderTop: '1px solid var(--border-subtle)',
+          flexShrink: 0,
         }}
       >
         <p style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', margin: 0 }}>
@@ -153,9 +384,11 @@ function Sidebar() {
   )
 }
 
-function App() {
+function AppShell() {
+  const entriesState = useEntries()
+
   return (
-    <BrowserRouter>
+    <EntriesContext.Provider value={entriesState}>
       <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-base)', overflow: 'hidden' }}>
         <Sidebar />
         <main
@@ -174,6 +407,14 @@ function App() {
           </div>
         </main>
       </div>
+    </EntriesContext.Provider>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppShell />
     </BrowserRouter>
   )
 }

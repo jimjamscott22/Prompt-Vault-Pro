@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useEntries } from '../hooks/useEntries'
+import { useSharedEntries } from '../App'
 import EntryCard from '../components/EntryCard'
 import EntryForm from '../components/EntryForm'
 import ImportModal from '../components/ImportModal'
@@ -60,7 +60,7 @@ function EmptyState({ filter }: { filter: FilterType }) {
 }
 
 function EntriesPage() {
-  const { entries, loading, refetch } = useEntries()
+  const { entries, loading, refetch } = useSharedEntries()
   const [modalOpen, setModalOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Entry | null>(null)
