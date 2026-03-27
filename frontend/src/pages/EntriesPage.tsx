@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useSharedEntries } from '../App'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSharedEntries, useSharedProjects } from '../App'
 import EntryCard from '../components/EntryCard'
 import EntryForm from '../components/EntryForm'
 import ImportModal from '../components/ImportModal'
@@ -15,7 +16,7 @@ const FILTERS: { label: string; value: FilterType }[] = [
   { label: 'Context', value: 'context' },
 ]
 
-function EmptyState({ filter }: { filter: FilterType }) {
+function EmptyState({ filter, folderName }: { filter: FilterType; folderName?: string }) {
   return (
     <div
       style={{
@@ -48,12 +49,14 @@ function EmptyState({ filter }: { filter: FilterType }) {
         </svg>
       </div>
       <p style={{ color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.9375rem', margin: '0 0 0.375rem' }}>
-        {filter === 'all' ? 'No entries yet' : `No ${filter}s yet`}
+        {folderName ? `No entries in ${folderName}` : filter === 'all' ? 'No entries yet' : `No ${filter}s yet`}
       </p>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', margin: 0 }}>
-        {filter === 'all'
-          ? 'Create your first entry to start building your vault.'
-          : `Switch to "All" or create a new ${filter}.`}
+        {folderName
+          ? 'Add an entry to this folder to get started.'
+          : filter === 'all'
+            ? 'Create your first entry to start building your vault.'
+            : `Switch to "All" or create a new ${filter}.`}
       </p>
     </div>
   )
@@ -61,6 +64,11 @@ function EmptyState({ filter }: { filter: FilterType }) {
 
 function EntriesPage() {
   const { entries, loading, refetch } = useSharedEntries()
+  const { projects } = useSharedProjects()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const activeFolderId = searchParams.get('folder')
+  const activeFolder = projects.find((p) => p.id === activeFolderId) ?? null
   const [modalOpen, setModalOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Entry | null>(null)
@@ -97,7 +105,8 @@ function EntriesPage() {
     refetch()
   }
 
-  const filtered = filter === 'all' ? entries : entries.filter((e) => e.type === filter)
+  const folderFiltered = activeFolderId ? entries.filter((e) => e.project_id === activeFolderId) : entries
+  const filtered = filter === 'all' ? folderFiltered : folderFiltered.filter((e) => e.type === filter)
 
   return (
     <>
@@ -105,19 +114,57 @@ function EntriesPage() {
       <div style={{ marginBottom: '1.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.625rem' }}>
-            <h1
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: 700,
-                fontSize: '1.375rem',
-                color: 'var(--text-primary)',
-                margin: 0,
-                letterSpacing: '-0.02em',
-              }}
-            >
-              Entries
-            </h1>
-            {!loading && entries.length > 0 && (
+            {activeFolder ? (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                <button
+                  onClick={() => navigate('/')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    color: 'var(--text-secondary)',
+                    padding: 0,
+                    transition: 'color 120ms ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'
+                  }}
+                >
+                  All Entries
+                </button>
+                <span style={{ color: 'var(--text-secondary)' }}>›</span>
+                <h1
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    fontSize: '1.375rem',
+                    color: 'var(--accent-amber)',
+                    margin: 0,
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  {activeFolder.name}
+                </h1>
+              </div>
+            ) : (
+              <h1
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
+                  fontSize: '1.375rem',
+                  color: 'var(--text-primary)',
+                  margin: 0,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                Entries
+              </h1>
+            )}
+            {!loading && folderFiltered.length > 0 && (
               <span
                 style={{
                   fontSize: '0.75rem',
@@ -129,7 +176,7 @@ function EntriesPage() {
                   borderRadius: '99px',
                 }}
               >
-                {entries.length}
+                {folderFiltered.length}
               </span>
             )}
           </div>
@@ -210,7 +257,7 @@ function EntriesPage() {
               {f.label}
               {f.value !== 'all' && !loading && (
                 <span style={{ marginLeft: '0.375rem', opacity: 0.6 }}>
-                  {entries.filter((e) => e.type === f.value).length}
+                  {folderFiltered.filter((e) => e.type === f.value).length}
                 </span>
               )}
             </button>
@@ -226,7 +273,7 @@ function EntriesPage() {
         </div>
       )}
 
-      {!loading && filtered.length === 0 && <EmptyState filter={filter} />}
+      {!loading && filtered.length === 0 && <EmptyState filter={filter} folderName={activeFolder?.name} />}
 
       {!loading && filtered.length > 0 && (
         <div>
@@ -236,6 +283,7 @@ function EntriesPage() {
               entry={entry}
               onEdit={openEdit}
               onDelete={handleDelete}
+              activeFolderId={activeFolderId}
             />
           ))}
         </div>
@@ -246,6 +294,7 @@ function EntriesPage() {
           entry={editTarget}
           onSubmit={handleSubmit}
           onClose={closeModal}
+          defaultProjectId={activeFolderId}
         />
       )}
 

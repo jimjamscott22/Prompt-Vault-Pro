@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useSharedProjects } from '../App'
 import type { Entry } from '../api/entries'
 
 interface Props {
   entry: Entry
   onEdit: (entry: Entry) => void
   onDelete: (id: string) => void
+  activeFolderId?: string | null
 }
 
 function formatDate(iso: string) {
@@ -15,7 +17,9 @@ function formatDate(iso: string) {
   })
 }
 
-function EntryCard({ entry, onEdit, onDelete }: Props) {
+function EntryCard({ entry, onEdit, onDelete, activeFolderId }: Props) {
+  const { projects } = useSharedProjects()
+  const folder = entry.project_id ? projects.find((p) => p.id === entry.project_id) : null
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
 
   useEffect(() => {
@@ -149,6 +153,25 @@ function EntryCard({ entry, onEdit, onDelete }: Props) {
             }}
           >
             {entry.language}
+          </span>
+        )}
+        {folder && !activeFolderId && (
+          <span
+            style={{
+              fontSize: '0.6875rem',
+              fontWeight: 500,
+              color: 'var(--accent-amber)',
+              background: 'rgba(245,158,11,0.1)',
+              border: '1px solid rgba(245,158,11,0.2)',
+              padding: '0.15rem 0.5rem',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+            }}
+          >
+            <span>📁</span>
+            {folder.name}
           </span>
         )}
         {entry.tags.map((tag) => (

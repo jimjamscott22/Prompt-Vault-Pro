@@ -5,7 +5,13 @@
       "Bash(npx tsc:*)",
       "Bash(grep -E \"\\\\.py$\")",
       "Bash(grep -E \"^\\\\-.*\\\\.\\(md|py|json|txt|toml\\)$\")",
-      "Bash(grep -E \"useSharedEntries|import.*useSharedEntries\" /home/jimjamscozz22/Desktop/GitHub/repo/Prompt-Vault-Pro/frontend/src/*.tsx /home/jimjamscozz22/Desktop/GitHub/repo/Prompt-Vault-Pro/frontend/src/**/*.tsx)"
+      "Bash(grep -E \"useSharedEntries|import.*useSharedEntries\" /home/jimjamscozz22/Desktop/GitHub/repo/Prompt-Vault-Pro/frontend/src/*.tsx /home/jimjamscozz22/Desktop/GitHub/repo/Prompt-Vault-Pro/frontend/src/**/*.tsx)",
+      "Bash(curl -s http://localhost:8765/api/v1/projects)",
+      "Bash(curl -s \"http://localhost:8765/api/v1/entries?project_id=be9e6940-9f33-4ff5-a948-10882bb8cc4f\")",
+      "Bash(for file:*)",
+      "Bash(do echo:*)",
+      "Read(//home/jimjamscozz22/Desktop/GitHub/repo/Prompt-Vault-Pro/backend/**)",
+      "Bash(done)"
     ]
   }
 }

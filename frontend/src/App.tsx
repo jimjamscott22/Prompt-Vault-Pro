@@ -1,15 +1,22 @@
 import { useState, createContext, useContext } from 'react'
-import { BrowserRouter, Routes, Route, NavLink, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, useNavigate, useSearchParams } from 'react-router-dom'
 import EntriesPage from './pages/EntriesPage'
 import ResourcesPage from './pages/ResourcesPage'
 import { useEntries } from './hooks/useEntries'
+import { useProjects } from './hooks/useProjects'
 import type { Entry } from './api/entries'
+import type { Project } from './api/projects'
 
 interface EntriesContextValue {
   entries: Entry[]
   loading: boolean
   total: number
   refetch: () => void
+  projects: Project[]
+  projectsLoading: boolean
+  createFolder: (name: string) => Promise<Project>
+  deleteFolder: (id: string) => Promise<void>
+  refetchProjects: () => void
 }
 
 const EntriesContext = createContext<EntriesContextValue>({
@@ -17,9 +24,18 @@ const EntriesContext = createContext<EntriesContextValue>({
   loading: true,
   total: 0,
   refetch: () => {},
+  projects: [],
+  projectsLoading: true,
+  createFolder: async () => { throw new Error('Not initialized') },
+  deleteFolder: async () => { throw new Error('Not initialized') },
+  refetchProjects: () => {},
 })
 
 export function useSharedEntries() {
+  return useContext(EntriesContext)
+}
+
+export function useSharedProjects() {
   return useContext(EntriesContext)
 }
 
@@ -28,6 +44,289 @@ const TYPE_CONFIG: { key: Entry['type']; label: string; color: string }[] = [
   { key: 'snippet', label: 'Snippets', color: 'var(--type-snippet)' },
   { key: 'context', label: 'Context', color: 'var(--type-context)' },
 ]
+
+function SidebarFolderList() {
+  const { projects, projectsLoading, createFolder, deleteFolder, entries } = useSharedEntries()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const activeFolderId = searchParams.get('folder')
+  const [isCreating, setIsCreating] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleCreateFolder = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newFolderName.trim()) {
+      e.preventDefault()
+      setSubmitting(true)
+      try {
+        await createFolder(newFolderName)
+        setNewFolderName('')
+        setIsCreating(false)
+      } finally {
+        setSubmitting(false)
+      }
+    } else if (e.key === 'Escape') {
+      setIsCreating(false)
+      setNewFolderName('')
+    }
+  }
+
+  const handleDeleteFolder = async (id: string) => {
+    if (id === activeFolderId) {
+      navigate('/')
+    }
+    await deleteFolder(id)
+  }
+
+  if (projectsLoading && projects.length === 0) {
+    return null
+  }
+
+  if (projects.length === 0 && !isCreating) {
+    return null
+  }
+
+  return (
+    <div style={{ padding: '0 0.75rem' }}>
+      {/* Section header */}
+      <button
+        onClick={() => setIsCreating(!isCreating)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          padding: '0 0.5rem',
+          marginBottom: '0.375rem',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+        }}
+      >
+        <span
+          style={{
+            fontSize: '0.6875rem',
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+          }}
+        >
+          Folders
+        </span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            setIsCreating(true)
+            setNewFolderName('')
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--text-muted)',
+            fontSize: '0.875rem',
+            padding: '0 0.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'color 120ms ease',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'
+          }}
+        >
+          +
+        </button>
+      </button>
+
+      {/* Inline creation input */}
+      {isCreating && (
+        <div style={{ marginBottom: '0.375rem', paddingLeft: '0.5rem' }}>
+          <input
+            autoFocus
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            onKeyDown={handleCreateFolder}
+            onBlur={() => {
+              if (!submitting) {
+                setIsCreating(false)
+                setNewFolderName('')
+              }
+            }}
+            disabled={submitting}
+            placeholder="Folder name…"
+            style={{
+              width: '100%',
+              background: 'var(--bg-input)',
+              border: '1px solid var(--accent-amber)',
+              borderRadius: '5px',
+              padding: '0.25rem 0.375rem',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.75rem',
+              color: 'var(--text-primary)',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+      )}
+
+      {/* All Entries button */}
+      <button
+        onClick={() => navigate('/')}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.375rem',
+          width: '100%',
+          padding: '0.3rem 0.5rem',
+          borderRadius: '5px',
+          background: !activeFolderId ? 'var(--bg-surface)' : 'none',
+          border: 'none',
+          cursor: 'pointer',
+          transition: 'background 120ms ease',
+        }}
+        onMouseEnter={(e) => {
+          if (activeFolderId) {
+            (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-surface)'
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (activeFolderId) {
+            (e.currentTarget as HTMLButtonElement).style.background = 'none'
+          }
+        }}
+      >
+        <span
+          style={{
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            color: !activeFolderId ? 'var(--accent-amber)' : 'var(--text-secondary)',
+            transition: 'color 120ms ease',
+          }}
+        >
+          All Entries
+        </span>
+        <span
+          style={{
+            fontSize: '0.6875rem',
+            color: 'var(--text-muted)',
+            marginLeft: 'auto',
+          }}
+        >
+          {entries.length}
+        </span>
+      </button>
+
+      {/* Folder list */}
+      {projects.length > 0 && (
+        <div style={{ marginBottom: '0.25rem' }}>
+          {projects.map((folder) => {
+            const folderEntryCount = entries.filter((e) => e.project_id === folder.id).length
+            const isActive = activeFolderId === folder.id
+
+            return (
+              <div
+                key={folder.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                  padding: '0.3rem 0.5rem',
+                  borderRadius: '5px',
+                  background: isActive ? 'var(--bg-surface)' : 'none',
+                  transition: 'background 120ms ease',
+                  group: 'folder-row',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-surface)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLDivElement).style.background = 'none'
+                  }
+                }}
+              >
+                <button
+                  onClick={() => navigate(`/?folder=${folder.id}`)}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.375rem',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '0.6875rem',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    📁
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      color: isActive ? 'var(--accent-amber)' : 'var(--text-secondary)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      transition: 'color 120ms ease',
+                    }}
+                  >
+                    {folder.name}
+                  </span>
+                </button>
+                <span
+                  style={{
+                    fontSize: '0.6875rem',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  {folderEntryCount}
+                </span>
+                <button
+                  onClick={() => handleDeleteFolder(folder.id)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.75rem',
+                    padding: '0 0.25rem',
+                    opacity: 0,
+                    transition: 'opacity 120ms ease, color 120ms ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.opacity = '1'
+                    ;(e.currentTarget as HTMLButtonElement).style.color = '#f87171'
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.opacity = '0'
+                    ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'
+                  }}
+                  title="Delete folder"
+                >
+                  ×
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function SidebarEntryList() {
   const { entries, loading } = useSharedEntries()
@@ -365,6 +664,7 @@ function Sidebar() {
           minHeight: 0,
         }}
       >
+        <SidebarFolderList />
         <SidebarEntryList />
       </div>
 
@@ -386,9 +686,10 @@ function Sidebar() {
 
 function AppShell() {
   const entriesState = useEntries()
+  const projectsState = useProjects()
 
   return (
-    <EntriesContext.Provider value={entriesState}>
+    <EntriesContext.Provider value={{ ...entriesState, ...projectsState }}>
       <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-base)', overflow: 'hidden' }}>
         <Sidebar />
         <main

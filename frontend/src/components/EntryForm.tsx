@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useSharedProjects } from '../App'
 import type { Entry, EntryCreate } from '../api/entries'
 
 interface Props {
   entry?: Entry | null
   onSubmit: (data: EntryCreate) => Promise<void>
   onClose: () => void
+  defaultProjectId?: string | null
 }
 
 const inputStyle: React.CSSProperties = {
@@ -29,11 +31,13 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: '0.02em',
 }
 
-function EntryForm({ entry, onSubmit, onClose }: Props) {
+function EntryForm({ entry, onSubmit, onClose, defaultProjectId }: Props) {
+  const { projects, projectsLoading } = useSharedProjects()
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [type, setType] = useState<'prompt' | 'snippet' | 'context'>('prompt')
   const [language, setLanguage] = useState('')
+  const [projectId, setProjectId] = useState<string | null>(null)
   const [tags, setTags] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,9 +49,12 @@ function EntryForm({ entry, onSubmit, onClose }: Props) {
       setBody(entry.body)
       setType(entry.type)
       setLanguage(entry.language ?? '')
+      setProjectId(entry.project_id)
       setTags(entry.tags.map((t) => t.name).join(', '))
+    } else if (defaultProjectId) {
+      setProjectId(defaultProjectId)
     }
-  }, [entry])
+  }, [entry, defaultProjectId])
 
   function getFocusStyle(field: string): React.CSSProperties {
     return focusedField === field
@@ -69,6 +76,7 @@ function EntryForm({ entry, onSubmit, onClose }: Props) {
         body,
         type,
         language: language || undefined,
+        project_id: projectId || undefined,
         tags: tagList.length ? tagList : undefined,
       })
     } catch (err) {
@@ -217,6 +225,31 @@ function EntryForm({ entry, onSubmit, onClose }: Props) {
                 style={{ ...inputStyle, ...getFocusStyle('lang') }}
               />
             </div>
+          </div>
+
+          {/* Folder */}
+          <div>
+            <label style={labelStyle}>Folder</label>
+            <select
+              value={projectId ?? ''}
+              onChange={(e) => setProjectId(e.target.value || null)}
+              onFocus={() => setFocusedField('folder')}
+              onBlur={() => setFocusedField(null)}
+              disabled={projectsLoading}
+              style={{
+                ...inputStyle,
+                appearance: 'none',
+                cursor: projectsLoading ? 'not-allowed' : 'pointer',
+                ...getFocusStyle('folder'),
+              }}
+            >
+              <option value="">No folder</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Tags */}
