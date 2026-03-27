@@ -32,15 +32,22 @@ async function request<T>(
   })
 
   if (!res.ok) {
-    const err: ApiError = await res.json()
-    throw new Error(err.error?.message ?? `Request failed: ${res.status}`)
+    let err: ApiError | null = null
+    try {
+      err = await res.json()
+    } catch {
+      // Response body is not JSON (e.g. proxy error or empty body)
+    }
+    throw new Error(err?.error?.message ?? `Request failed: ${res.status}`)
   }
 
   if (res.status === 204) {
     return { data: undefined as T }
   }
 
-  return res.json()
+  const text = await res.text()
+  if (!text) return { data: undefined as T }
+  return JSON.parse(text)
 }
 
 export function get<T>(path: string, params?: Record<string, string>): Promise<ApiResponse<T>> {

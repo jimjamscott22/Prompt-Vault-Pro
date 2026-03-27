@@ -21,22 +21,25 @@ AI Prompt & Snippet Library with Project Binding. A local-first, CLI-friendly pe
 promptvaultpro/
 ├── CLAUDE.md
 ├── README.md
+├── .venv/                       # shared venv at project root (activate from here)
 ├── backend/
 │   ├── main.py                  # FastAPI app entrypoint
 │   ├── database.py              # SQLAlchemy async engine + session
 │   ├── models/
 │   │   ├── entry.py             # Entry, Tag, EntryTag ORM models
 │   │   ├── bundle.py            # Bundle, BundleEntry ORM models
-│   │   └── project.py          # Project ORM model
+│   │   └── project.py           # Project ORM model
 │   ├── routers/
 │   │   ├── entries.py           # /entries CRUD
 │   │   ├── bundles.py           # /bundles CRUD + export
 │   │   ├── projects.py          # /projects CRUD
-│   │   └── search.py            # /search FTS endpoint
+│   │   ├── search.py            # /search FTS endpoint
+│   │   └── imports.py           # /import/claude-skills multipart upload
 │   ├── services/
 │   │   ├── entry_service.py
 │   │   ├── bundle_service.py
-│   │   └── search_service.py
+│   │   ├── search_service.py
+│   │   └── import_service.py    # Claude skills markdown parser + bulk entry creator
 │   ├── schemas/                 # Pydantic request/response models
 │   └── auth.py                  # API key middleware
 ├── cli/
@@ -51,19 +54,23 @@ promptvaultpro/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── EntryCard.tsx    # Entry display card with edit/delete actions
-│   │   │   └── EntryForm.tsx    # Entry create/edit modal form
+│   │   │   ├── EntryForm.tsx    # Entry create/edit modal form
+│   │   │   └── ImportModal.tsx  # Import modal (paste markdown or file upload)
 │   │   ├── pages/
-│   │   │   └── EntriesPage.tsx  # Entry list with full CRUD (create, edit, delete)
+│   │   │   ├── EntriesPage.tsx  # Entry list with full CRUD (create, edit, delete, import)
+│   │   │   └── ResourcesPage.tsx # Curated prompt engineering resources / links
 │   │   ├── hooks/
 │   │   │   └── useEntries.ts    # Entries fetch hook with refetch
 │   │   └── api/                 # Typed API client (fetch wrappers)
-│   │       ├── client.ts        # Base fetch wrapper (get, post, put, del)
-│   │       └── entries.ts       # Entry API functions + TypeScript types
+│   │       ├── client.ts        # Base fetch wrapper (get, post, put, del, postForm)
+│   │       ├── entries.ts       # Entry API functions + TypeScript types
+│   │       └── imports.ts       # Import API function (claude-skills)
 │   └── vite.config.ts
 └── docs/
     ├── architecture.md
     ├── api.md                   # REST endpoint reference
-    └── cli.md                   # CLI command reference
+    ├── cli.md                   # CLI command reference
+    └── import.md                # Claude skills import guide (UI + API + parser details)
 ```
 
 ---
@@ -106,6 +113,8 @@ GET    /projects
 POST   /projects
 
 GET    /search?q=
+
+POST   /import/claude-skills     # multipart/form-data: file= or content=
 ```
 
 ---
@@ -132,11 +141,11 @@ pv bundle add <bundle> <entry-id>
 ### Using `uv` (recommended)
 
 ```bash
-# Backend
-cd backend && uv venv .venv
+# Backend (venv lives at project root, not inside backend/)
+uv venv .venv
 source .venv/bin/activate  # or `.venv\Scripts\activate` on Windows
-uv pip install -r requirements.txt
-uvicorn main:app --reload --port 8765
+uv pip install -r backend/requirements.txt
+cd backend && uvicorn main:app --reload --port 8765
 
 # Frontend
 cd frontend && npm install
@@ -157,10 +166,10 @@ npm run lint                  # frontend (ESLint)
 ### Using `pip` + `venv` (alternative)
 
 ```bash
-# Backend
-cd backend && python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8765
+# Backend (venv lives at project root, not inside backend/)
+python -m venv .venv && source .venv/bin/activate
+pip install -r backend/requirements.txt
+cd backend && uvicorn main:app --reload --port 8765
 
 # Frontend
 cd frontend && npm install
@@ -199,6 +208,7 @@ npm run lint                  # frontend (ESLint)
 - **CLAUDE.md export:** `pv export --format claude_md` renders a `## Context` section with selected entries formatted as fenced code blocks with metadata headers, ready to paste or append to a CLAUDE.md
 - **Local-only mode:** if `auth.local_only = true` in config, skip API key validation entirely — useful for single-machine personal setups
 - **FTS5 search:** queries hit the SQLite FTS5 virtual table; results ranked by BM25; fallback to LIKE if FTS5 unavailable
+- **Claude skills import:** `POST /import/claude-skills` accepts a multipart form with either a `.md` file upload (`file=`) or pasted text (`content=`); the parser splits on H1 headings, maps Description/Instructions/Tags sections to entry fields, and bulk-creates `prompt`-type entries; see `docs/import.md` for field mapping and parser behaviour
 
 ---
 
@@ -233,3 +243,4 @@ The frontend uses a "Refined Terminal" dark aesthetic. Preserve these decisions 
 - `@docs/architecture.md` — system design decisions and rationale
 - `@docs/api.md` — full REST endpoint reference with request/response examples
 - `@docs/cli.md` — CLI usage guide and examples
+- `@docs/import.md` — Claude skills import guide (UI walkthrough, REST API, field mapping, parser behaviour)
