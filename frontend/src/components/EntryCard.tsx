@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { Entry } from '../api/entries'
 
 interface Props {
@@ -15,6 +16,24 @@ function formatDate(iso: string) {
 }
 
 function EntryCard({ entry, onEdit, onDelete }: Props) {
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
+
+  useEffect(() => {
+    if (copyState === 'idle') return
+
+    const timeout = window.setTimeout(() => setCopyState('idle'), 1800)
+    return () => window.clearTimeout(timeout)
+  }, [copyState])
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(entry.body)
+      setCopyState('copied')
+    } catch {
+      setCopyState('error')
+    }
+  }
+
   return (
     <div
       className="entry-card"
@@ -41,7 +60,7 @@ function EntryCard({ entry, onEdit, onDelete }: Props) {
         >
           {entry.title}
         </h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <span
             className="type-badge"
             data-type={entry.type}
@@ -57,27 +76,15 @@ function EntryCard({ entry, onEdit, onDelete }: Props) {
             {entry.type}
           </span>
           <button
+            onClick={handleCopy}
+            className={`entry-action-button${copyState === 'copied' ? ' is-copied' : ''}${copyState === 'error' ? ' is-error' : ''}`}
+            aria-label={`Copy ${entry.title}`}
+          >
+            {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Failed' : 'Copy'}
+          </button>
+          <button
             onClick={() => onEdit(entry)}
-            style={{
-              fontSize: '0.75rem',
-              fontWeight: 500,
-              color: 'var(--text-secondary)',
-              background: 'transparent',
-              border: '1px solid var(--border-default)',
-              borderRadius: '5px',
-              padding: '0.2rem 0.625rem',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-body)',
-              transition: 'all 120ms ease',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'
-              ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--text-muted)'
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'
-              ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border-default)'
-            }}
+            className="entry-action-button"
           >
             Edit
           </button>

@@ -90,6 +90,33 @@ body {
 .type-badge[data-type="snippet"] { color: var(--type-snippet); background: var(--type-snippet-bg); }
 .type-badge[data-type="context"] { color: var(--type-context); background: var(--type-context-bg); }
 
+.entry-action-button {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: 5px;
+  padding: 0.2rem 0.625rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+.entry-action-button:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+.entry-action-button.is-copied {
+  color: var(--accent-amber);
+  border-color: rgba(245, 158, 11, 0.35);
+  background: var(--accent-amber-dim);
+}
+.entry-action-button.is-error {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+}
+
 /* Filter tab */
 .filter-tab {
   font-family: var(--font-body);
