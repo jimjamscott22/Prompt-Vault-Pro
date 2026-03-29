@@ -167,6 +167,23 @@ body {
   padding-right: 2rem;
 }
 
+/* Sidebar collapse */
+.sidebar-rail {
+  position: relative;
+}
+.sidebar-toggle-btn {
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast) !important;
+}
+.sidebar-rail:hover .sidebar-toggle-btn {
+  opacity: 1;
+}
+.sidebar-toggle-btn:hover {
+  color: var(--accent-amber) !important;
+  border-color: var(--accent-amber) !important;
+  background: var(--bg-surface) !important;
+}
+
 /* Sidebar grid-dot texture */
 .sidebar-texture {
   background-image: radial-gradient(circle, var(--border-subtle) 1px, transparent 1px);

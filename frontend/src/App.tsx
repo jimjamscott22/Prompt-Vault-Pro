@@ -816,12 +816,19 @@ function SidebarEntryList() {
   )
 }
 
+const SIDEBAR_EXPANDED = 220
+const SIDEBAR_COLLAPSED = 52
+
 function Sidebar() {
+  const [collapsed, setCollapsed] = useState(false)
+  const width = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED
+
   return (
     <aside
+      className="sidebar-rail"
       style={{
-        width: '220px',
-        minWidth: '220px',
+        width: `${width}px`,
+        minWidth: `${width}px`,
         background: 'var(--bg-sidebar)',
         borderRight: '1px solid var(--border-subtle)',
         display: 'flex',
@@ -830,13 +837,16 @@ function Sidebar() {
         position: 'sticky',
         top: 0,
         flexShrink: 0,
+        transition: 'width 250ms cubic-bezier(0.4, 0, 0.2, 1), min-width 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+        overflow: 'hidden',
       }}
     >
       {/* Logo */}
       <div
         style={{
-          padding: '1.5rem 1.25rem 1.25rem',
+          padding: collapsed ? '1.5rem 0.75rem 1.25rem' : '1.5rem 1.25rem 1.25rem',
           borderBottom: '1px solid var(--border-subtle)',
+          transition: 'padding 250ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
@@ -850,7 +860,10 @@ function Sidebar() {
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
+              cursor: 'pointer',
             }}
+            onClick={() => setCollapsed(c => !c)}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path
@@ -860,12 +873,17 @@ function Sidebar() {
             </svg>
           </div>
           <span
+            className="sidebar-label"
             style={{
               fontFamily: 'var(--font-display)',
               fontWeight: 700,
               fontSize: '1rem',
               letterSpacing: '-0.01em',
               color: 'var(--text-primary)',
+              opacity: collapsed ? 0 : 1,
+              transition: 'opacity 200ms ease',
+              whiteSpace: 'nowrap',
+              pointerEvents: collapsed ? 'none' : 'auto',
             }}
           >
             PromptVault
@@ -874,9 +892,49 @@ function Sidebar() {
         </div>
       </div>
 
+      {/* Toggle button */}
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        className="sidebar-toggle-btn"
+        style={{
+          position: 'absolute',
+          top: '50%',
+          right: '-12px',
+          transform: 'translateY(-50%)',
+          width: '24px',
+          height: '24px',
+          borderRadius: '50%',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-default)',
+          color: 'var(--text-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 10,
+          padding: 0,
+          transition: 'color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast)',
+        }}
+        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          style={{
+            transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
+          <path d="M7.5 2L3.5 6l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
       {/* Nav */}
       <nav style={{ padding: '0.75rem 0.75rem 0.5rem' }}>
         <p
+          className="sidebar-label"
           style={{
             fontSize: '0.6875rem',
             fontWeight: 600,
@@ -885,6 +943,11 @@ function Sidebar() {
             color: 'var(--text-muted)',
             padding: '0 0.5rem',
             marginBottom: '0.375rem',
+            opacity: collapsed ? 0 : 1,
+            height: collapsed ? 0 : 'auto',
+            marginTop: 0,
+            overflow: 'hidden',
+            transition: 'opacity 200ms ease, height 250ms ease, margin 250ms ease',
           }}
         >
           Library
@@ -892,11 +955,12 @@ function Sidebar() {
         <NavLink
           to="/"
           end
+          title="Entries"
           style={({ isActive }) => ({
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            padding: '0.5rem 0.625rem',
+            padding: collapsed ? '0.5rem' : '0.5rem 0.625rem',
             borderRadius: '7px',
             fontSize: '0.875rem',
             fontWeight: 500,
@@ -904,18 +968,22 @@ function Sidebar() {
             color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
             background: isActive ? 'var(--bg-surface)' : 'transparent',
             transition: 'all 120ms ease',
+            justifyContent: collapsed ? 'center' : 'flex-start',
           })}
         >
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ flexShrink: 0 }}>
             <rect x="1" y="1" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity="0.7" />
             <rect x="8.5" y="1" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity="0.7" />
             <rect x="1" y="8.5" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity="0.7" />
             <rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity="0.4" />
           </svg>
-          Entries
+          <span className="sidebar-label" style={{ opacity: collapsed ? 0 : 1, transition: 'opacity 200ms ease', whiteSpace: 'nowrap', pointerEvents: collapsed ? 'none' : 'auto' }}>
+            Entries
+          </span>
         </NavLink>
 
         <p
+          className="sidebar-label"
           style={{
             fontSize: '0.6875rem',
             fontWeight: 600,
@@ -923,18 +991,23 @@ function Sidebar() {
             textTransform: 'uppercase',
             color: 'var(--text-muted)',
             padding: '0 0.5rem',
-            margin: '1rem 0 0.375rem',
+            margin: collapsed ? '0.5rem 0 0.375rem' : '1rem 0 0.375rem',
+            opacity: collapsed ? 0 : 1,
+            height: collapsed ? 0 : 'auto',
+            overflow: 'hidden',
+            transition: 'opacity 200ms ease, height 250ms ease, margin 250ms ease',
           }}
         >
           Discover
         </p>
         <NavLink
           to="/resources"
+          title="Resources"
           style={({ isActive }) => ({
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            padding: '0.5rem 0.625rem',
+            padding: collapsed ? '0.5rem' : '0.5rem 0.625rem',
             borderRadius: '7px',
             fontSize: '0.875rem',
             fontWeight: 500,
@@ -942,24 +1015,30 @@ function Sidebar() {
             color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
             background: isActive ? 'var(--bg-surface)' : 'transparent',
             transition: 'all 120ms ease',
+            justifyContent: collapsed ? 'center' : 'flex-start',
           })}
         >
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ flexShrink: 0 }}>
             <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" strokeWidth="1.4" opacity="0.7" />
             <path d="M7.5 4v3.5l2 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.7" />
           </svg>
-          Resources
+          <span className="sidebar-label" style={{ opacity: collapsed ? 0 : 1, transition: 'opacity 200ms ease', whiteSpace: 'nowrap', pointerEvents: collapsed ? 'none' : 'auto' }}>
+            Resources
+          </span>
         </NavLink>
       </nav>
 
-      {/* Entries list */}
+      {/* Entries list — hidden when collapsed */}
       <div
         style={{
           flex: 1,
-          overflowY: 'auto',
+          overflowY: collapsed ? 'hidden' : 'auto',
           borderTop: '1px solid var(--border-subtle)',
           paddingTop: '0.75rem',
           minHeight: 0,
+          opacity: collapsed ? 0 : 1,
+          transition: 'opacity 200ms ease',
+          pointerEvents: collapsed ? 'none' : 'auto',
         }}
       >
         <SidebarFolderList />
@@ -969,12 +1048,20 @@ function Sidebar() {
       {/* Footer */}
       <div
         style={{
-          padding: '0.875rem 1.25rem',
+          padding: collapsed ? '0.875rem 0.5rem' : '0.875rem 1.25rem',
           borderTop: '1px solid var(--border-subtle)',
           flexShrink: 0,
+          transition: 'padding 250ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        <p style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', margin: 0 }}>
+        <p style={{
+          fontSize: '0.6875rem',
+          color: 'var(--text-muted)',
+          margin: 0,
+          opacity: collapsed ? 0 : 1,
+          transition: 'opacity 200ms ease',
+          whiteSpace: 'nowrap',
+        }}>
           v0.1.0 · local-only
         </p>
       </div>
