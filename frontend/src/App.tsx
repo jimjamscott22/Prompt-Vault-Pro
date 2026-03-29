@@ -1,4 +1,4 @@
-import { useState, createContext, useContext } from 'react'
+import { useState, useRef, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, useNavigate, useSearchParams } from 'react-router-dom'
 import EntriesPage from './pages/EntriesPage'
 import ResourcesPage from './pages/ResourcesPage'
@@ -328,19 +328,82 @@ function SidebarFolderList() {
   )
 }
 
+type SortKey = 'newest' | 'oldest' | 'a-z' | 'z-a'
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'newest', label: 'Newest' },
+  { key: 'oldest', label: 'Oldest' },
+  { key: 'a-z', label: 'A → Z' },
+  { key: 'z-a', label: 'Z → A' },
+]
+
+function sortEntries(items: Entry[], sort: SortKey): Entry[] {
+  const sorted = [...items]
+  switch (sort) {
+    case 'newest':
+      return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    case 'oldest':
+      return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    case 'a-z':
+      return sorted.sort((a, b) => a.title.localeCompare(b.title))
+    case 'z-a':
+      return sorted.sort((a, b) => b.title.localeCompare(a.title))
+  }
+}
+
 function SidebarEntryList() {
   const { entries, loading } = useSharedEntries()
   const navigate = useNavigate()
   const [vaultOpen, setVaultOpen] = useState(true)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeTypes, setActiveTypes] = useState<Set<Entry['type']>>(new Set(['prompt', 'snippet', 'context']))
+  const [sortBy, setSortBy] = useState<SortKey>('newest')
+  const [sortOpen, setSortOpen] = useState(false)
+  const sortRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setSortOpen(false)
+      }
+    }
+    if (sortOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [sortOpen])
+
+  function toggleType(type: Entry['type']) {
+    setActiveTypes((prev) => {
+      const next = new Set(prev)
+      if (next.has(type)) {
+        if (next.size > 1) next.delete(type)
+      } else {
+        next.add(type)
+      }
+      return next
+    })
+  }
 
   function toggleGroup(key: string) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
+  const query = searchQuery.toLowerCase().trim()
+  const filtered = entries.filter((e) => {
+    if (!activeTypes.has(e.type)) return false
+    if (query && !e.title.toLowerCase().includes(query)) return false
+    return true
+  })
+  const sorted = sortEntries(filtered, sortBy)
+
+  const allTypesActive = activeTypes.size === 3
+  const hasActiveFilters = !allTypesActive || query !== ''
+
   const grouped = TYPE_CONFIG.map((t) => ({
     ...t,
-    items: entries.filter((e) => e.type === t.key),
+    items: sorted.filter((e) => e.type === t.key),
   }))
 
   if (loading) {
@@ -386,17 +449,223 @@ function SidebarEntryList() {
         <span
           style={{
             fontSize: '0.6875rem',
-            color: 'var(--text-muted)',
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-default)',
+            color: hasActiveFilters ? 'var(--accent-amber)' : 'var(--text-muted)',
+            background: hasActiveFilters ? 'var(--accent-amber-dim)' : 'var(--bg-surface)',
+            border: `1px solid ${hasActiveFilters ? 'rgba(245, 158, 11, 0.25)' : 'var(--border-default)'}`,
             padding: '0 0.375rem',
             borderRadius: '99px',
             lineHeight: '1.4',
+            transition: 'all 200ms ease',
           }}
         >
-          {entries.length}
+          {filtered.length}{hasActiveFilters ? `/${entries.length}` : ''}
         </span>
       </button>
+
+      {/* Filter & sort controls */}
+      {vaultOpen && (
+        <div style={{ padding: '0 0.25rem', marginBottom: '0.5rem' }}>
+          {/* Search input */}
+          <div style={{ position: 'relative', marginBottom: '0.375rem' }}>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              style={{
+                position: 'absolute',
+                left: '0.5rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+              }}
+            >
+              <circle cx="5" cy="5" r="3.5" stroke="var(--text-muted)" strokeWidth="1.2" />
+              <path d="M7.5 7.5L10 10" stroke="var(--text-muted)" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter entries..."
+              className="sidebar-search"
+              style={{
+                width: '100%',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '5px',
+                padding: '0.3rem 0.375rem 0.3rem 1.625rem',
+                fontFamily: 'var(--font-body)',
+                fontSize: '0.6875rem',
+                color: 'var(--text-primary)',
+                outline: 'none',
+                transition: 'border-color 120ms ease, box-shadow 120ms ease',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--accent-amber)'
+                e.currentTarget.style.boxShadow = '0 0 0 2px var(--accent-amber-glow)'
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-subtle)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute',
+                  right: '0.25rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  fontSize: '0.75rem',
+                  padding: '0 0.25rem',
+                  lineHeight: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          {/* Type toggles + sort */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            {TYPE_CONFIG.map((t) => {
+              const isActive = activeTypes.has(t.key)
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => toggleType(t.key)}
+                  title={`${isActive ? 'Hide' : 'Show'} ${t.label.toLowerCase()}`}
+                  className="sidebar-type-toggle"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    padding: '0.2rem 0.375rem',
+                    borderRadius: '4px',
+                    border: `1px solid ${isActive ? t.color + '33' : 'var(--border-subtle)'}`,
+                    background: isActive ? t.color + '15' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 120ms ease',
+                    opacity: isActive ? 1 : 0.45,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      background: t.color,
+                      transition: 'opacity 120ms ease',
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: '0.625rem',
+                      fontWeight: 600,
+                      color: isActive ? t.color : 'var(--text-muted)',
+                      letterSpacing: '0.02em',
+                      transition: 'color 120ms ease',
+                    }}
+                  >
+                    {t.label.charAt(0)}
+                  </span>
+                </button>
+              )
+            })}
+
+            {/* Sort dropdown */}
+            <div ref={sortRef} style={{ marginLeft: 'auto', position: 'relative' }}>
+              <button
+                onClick={() => setSortOpen((v) => !v)}
+                title={`Sort: ${SORT_OPTIONS.find((o) => o.key === sortBy)?.label}`}
+                className="sidebar-sort-btn"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.2rem 0.375rem',
+                  borderRadius: '4px',
+                  border: `1px solid ${sortOpen ? 'var(--accent-amber)33' : 'var(--border-subtle)'}`,
+                  background: sortOpen ? 'var(--accent-amber-dim)' : 'transparent',
+                  cursor: 'pointer',
+                  transition: 'all 120ms ease',
+                  color: sortOpen ? 'var(--accent-amber)' : 'var(--text-muted)',
+                }}
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M1.5 2.5H8.5M1.5 5H6.5M1.5 7.5H4.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
+              </button>
+
+              {sortOpen && (
+                <div
+                  className="sidebar-sort-menu"
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    right: 0,
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: '6px',
+                    padding: '0.25rem',
+                    zIndex: 50,
+                    minWidth: '100px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+                  }}
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => {
+                        setSortBy(opt.key)
+                        setSortOpen(false)
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.375rem',
+                        width: '100%',
+                        padding: '0.3rem 0.5rem',
+                        borderRadius: '4px',
+                        border: 'none',
+                        background: sortBy === opt.key ? 'var(--accent-amber-dim)' : 'transparent',
+                        cursor: 'pointer',
+                        transition: 'background 120ms ease',
+                        fontFamily: 'var(--font-body)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (sortBy !== opt.key) e.currentTarget.style.background = 'var(--bg-surface)'
+                      }}
+                      onMouseLeave={(e) => {
+                        if (sortBy !== opt.key) e.currentTarget.style.background = 'transparent'
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '0.6875rem',
+                          fontWeight: sortBy === opt.key ? 600 : 400,
+                          color: sortBy === opt.key ? 'var(--accent-amber)' : 'var(--text-secondary)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {opt.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {vaultOpen && grouped.map((group) => {
         if (group.items.length === 0) return null
@@ -514,6 +783,35 @@ function SidebarEntryList() {
           </div>
         )
       })}
+
+      {/* Empty filter state */}
+      {vaultOpen && filtered.length === 0 && (
+        <div style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', margin: 0 }}>
+            No entries match filters
+          </p>
+          <button
+            onClick={() => {
+              setSearchQuery('')
+              setActiveTypes(new Set(['prompt', 'snippet', 'context']))
+            }}
+            style={{
+              marginTop: '0.375rem',
+              fontSize: '0.625rem',
+              fontWeight: 600,
+              color: 'var(--accent-amber)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              textUnderlineOffset: '2px',
+              fontFamily: 'var(--font-body)',
+            }}
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
     </div>
   )
 }
