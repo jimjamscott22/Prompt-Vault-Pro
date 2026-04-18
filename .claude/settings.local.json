@@ -12,7 +12,10 @@
       "Bash(do echo:*)",
       "Read(//home/jimjamscozz22/Desktop/GitHub/repo/Prompt-Vault-Pro/backend/**)",
       "Bash(done)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(curl -s http://localhost:8765/api/v1/entries?per_page=1)",
+      "Bash(python -c \"import sqlite3; from pathlib import Path; conn = sqlite3.connect\\(Path.home\\(\\) / '.config/promptvault/promptvault.db'\\); print\\(conn.execute\\(\\\\\"SELECT sql FROM sqlite_master WHERE type='table'\\\\\"\\).fetchall\\(\\)\\)\")",
+      "Bash(python seed_prompts.py)"
     ]
   }
 }
