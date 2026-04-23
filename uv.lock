@@ -344,6 +344,7 @@ name = "promptvaultpro-backend"
 version = "0.1.0"
 source = { virtual = "backend" }
 dependencies = [
+    { name = "aiomysql" },
     { name = "aiosqlite" },
     { name = "fastapi" },
     { name = "pydantic" },
@@ -352,11 +353,6 @@ dependencies = [
     { name = "python-multipart" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.optional-dependencies]
-mariadb = [
-    { name = "aiomysql" },
 ]
 
 [package.dev-dependencies]
@@ -369,7 +365,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiomysql", marker = "extra == 'mariadb'", specifier = ">=0.2.0" },
+    { name = "aiomysql", specifier = ">=0.2.0" },
     { name = "aiosqlite", specifier = ">=0.19.0" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "pydantic", specifier = ">=2.5.0" },
@@ -379,7 +375,6 @@ requires-dist = [
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.23" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.24.0" },
 ]
-provides-extras = ["mariadb"]
 
 [package.metadata.requires-dev]
 dev = [

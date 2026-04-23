@@ -66,13 +66,13 @@ npm run build
 
 # Run the backend (serves API + built frontend)
 cd ../backend
-uvicorn main:app --port 8765
+uv run uvicorn main:app --port 8765
 ```
 
 To access from other devices on your network:
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8765
+uv run uvicorn main:app --host 0.0.0.0 --port 8765
 ```
 # Other Methods Below
 

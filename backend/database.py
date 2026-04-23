@@ -2,25 +2,26 @@
 
 Supports two backends:
   - SQLite (default): set PROMPTVAULT_DB_PATH or leave default
-  - MariaDB/MySQL:    set PROMPTVAULT_DB_ENGINE=mariadb and provide connection vars
+  - MariaDB/MySQL:    set PROMPTVAULT_DB_ENGINE=mysql or mariadb and provide connection vars
 """
 
 import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import text
 
 # Load .env from project root (one level up from backend/)
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 DB_ENGINE = os.environ.get("PROMPTVAULT_DB_ENGINE", "sqlite").lower()
+MYSQL_ENGINES = {"mysql", "mariadb"}
 
-if DB_ENGINE == "mariadb":
-    # Build MariaDB URL from individual vars or a single URL
+if DB_ENGINE in MYSQL_ENGINES:
+    # Build MySQL/MariaDB URL from individual vars or a single URL
     DATABASE_URL = os.environ.get("PROMPTVAULT_DB_URL", "")
     if not DATABASE_URL:
         _host = os.environ.get("PROMPTVAULT_MARIADB_HOST", "127.0.0.1")
@@ -47,7 +48,7 @@ class Base(DeclarativeBase):
 
 def is_mariadb() -> bool:
     """Return True if the active backend is MariaDB/MySQL."""
-    return DB_ENGINE == "mariadb"
+    return DB_ENGINE in MYSQL_ENGINES
 
 
 async def get_session() -> AsyncSession:
@@ -63,8 +64,8 @@ async def init_db():
         db_dir.mkdir(parents=True, exist_ok=True)
 
     async with engine.begin() as conn:
-        from models.entry import Entry, Tag, EntryTag  # noqa: F401
         from models.bundle import Bundle, BundleEntry  # noqa: F401
+        from models.entry import Entry, EntryTag, Tag  # noqa: F401
         from models.project import Project  # noqa: F401
 
         await conn.run_sync(Base.metadata.create_all)
