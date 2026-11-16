@@ -63,3 +63,11 @@ async def test_search_malformed_query_falls_back_to_like(client):
     """FTS5 syntax errors from user input fall back to LIKE instead of failing."""
     entry_id = await _create(client, "Quoted", 'has "unbalancedtoken5 quote')
     assert entry_id in await _search_ids(client, '"unbalancedtoken5')
+
+
+async def test_like_fallback_escapes_wildcards(client):
+    await _create(client, "percent", "100% done")
+    await _create(client, "plain", "nothing special")
+    # "%" is an FTS5 syntax error, forcing the LIKE fallback; "%" must match literally.
+    ids = await _search_ids(client, "100%")
+    assert len(ids) == 1

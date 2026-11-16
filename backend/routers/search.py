@@ -17,8 +17,8 @@ async def search(
     project: str | None = None,
     lang: str | None = None,
     type: str | None = None,
-    page: int = 1,
-    per_page: int = 20,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
     session: AsyncSession = Depends(get_session),
 ) -> DataResponse:
     """Search entries using full-text search with optional filters."""

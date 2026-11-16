@@ -1,21 +1,21 @@
 """Project CRUD router."""
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, func
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_session
 from models.project import Project
 from schemas.common import DataResponse, Meta
-from schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
+from schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 
 router = APIRouter(tags=["projects"])
 
 
 @router.get("/projects")
 async def list_projects(
-    page: int = 1,
-    per_page: int = 20,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
     session: AsyncSession = Depends(get_session),
 ) -> DataResponse:
     """Return paginated projects."""
@@ -59,7 +59,9 @@ async def get_project(
     result = await session.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail={"error": {"code": "not_found", "message": "Project not found"}})
+        raise HTTPException(
+            status_code=404, detail={"error": {"code": "not_found", "message": "Project not found"}}
+        )
     return DataResponse(data=ProjectResponse.model_validate(project))
 
 
@@ -73,7 +75,9 @@ async def update_project(
     result = await session.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail={"error": {"code": "not_found", "message": "Project not found"}})
+        raise HTTPException(
+            status_code=404, detail={"error": {"code": "not_found", "message": "Project not found"}}
+        )
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(project, field, value)
@@ -92,6 +96,8 @@ async def delete_project(
     result = await session.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail={"error": {"code": "not_found", "message": "Project not found"}})
+        raise HTTPException(
+            status_code=404, detail={"error": {"code": "not_found", "message": "Project not found"}}
+        )
     await session.delete(project)
     await session.commit()

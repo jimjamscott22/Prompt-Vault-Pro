@@ -1,12 +1,18 @@
 """Bundle CRUD and export router."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_session
+from schemas.bundle import (
+    BundleAddEntry,
+    BundleCreate,
+    BundleDetailResponse,
+    BundleResponse,
+    BundleUpdate,
+)
 from schemas.common import DataResponse, Meta
-from schemas.bundle import BundleCreate, BundleUpdate, BundleAddEntry, BundleResponse, BundleDetailResponse
 from schemas.entry import EntryResponse
 from services import bundle_service
 
@@ -15,8 +21,8 @@ router = APIRouter(tags=["bundles"])
 
 @router.get("/bundles")
 async def list_bundles(
-    page: int = 1,
-    per_page: int = 20,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
     session: AsyncSession = Depends(get_session),
 ) -> DataResponse:
     """Return paginated bundles."""
@@ -45,7 +51,9 @@ async def get_bundle(
     """Return a single bundle by ID with its entries."""
     bundle = await bundle_service.get_bundle(session, bundle_id)
     if not bundle:
-        raise HTTPException(status_code=404, detail={"error": {"code": "not_found", "message": "Bundle not found"}})
+        raise HTTPException(
+            status_code=404, detail={"error": {"code": "not_found", "message": "Bundle not found"}}
+        )
 
     entries = [
         EntryResponse.model_validate(be.entry)
@@ -72,7 +80,9 @@ async def update_bundle(
     """Update an existing bundle."""
     bundle = await bundle_service.update_bundle(session, bundle_id, data)
     if not bundle:
-        raise HTTPException(status_code=404, detail={"error": {"code": "not_found", "message": "Bundle not found"}})
+        raise HTTPException(
+            status_code=404, detail={"error": {"code": "not_found", "message": "Bundle not found"}}
+        )
     return DataResponse(data=BundleResponse.model_validate(bundle))
 
 
@@ -84,7 +94,9 @@ async def delete_bundle(
     """Delete a bundle by ID."""
     deleted = await bundle_service.delete_bundle(session, bundle_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail={"error": {"code": "not_found", "message": "Bundle not found"}})
+        raise HTTPException(
+            status_code=404, detail={"error": {"code": "not_found", "message": "Bundle not found"}}
+        )
 
 
 @router.post("/bundles/{bundle_id}/entries", status_code=201)
@@ -96,7 +108,10 @@ async def add_entry_to_bundle(
     """Add an entry to a bundle."""
     try:
         added = await bundle_service.add_entry_to_bundle(
-            session, bundle_id, data.entry_id, data.position,
+            session,
+            bundle_id,
+            data.entry_id,
+            data.position,
         )
     except bundle_service.EntryAlreadyInBundleError:
         raise HTTPException(
@@ -125,5 +140,7 @@ async def export_bundle(
     """Export a bundle in the specified format."""
     content = await bundle_service.export_bundle(session, bundle_id, format)
     if content is None:
-        raise HTTPException(status_code=404, detail={"error": {"code": "not_found", "message": "Bundle not found"}})
+        raise HTTPException(
+            status_code=404, detail={"error": {"code": "not_found", "message": "Bundle not found"}}
+        )
     return PlainTextResponse(content=content)

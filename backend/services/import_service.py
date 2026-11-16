@@ -23,20 +23,41 @@ class ParsedSkill:
 # Label sets — extended to cover real-world naming variations
 # ---------------------------------------------------------------------------
 
-_DESC_LABELS: frozenset[str] = frozenset({
-    "description", "summary", "about", "overview", "desc", "synopsis"
-})
+_DESC_LABELS: frozenset[str] = frozenset(
+    {"description", "summary", "about", "overview", "desc", "synopsis"}
+)
 
-_TAG_LABELS: frozenset[str] = frozenset({
-    "triggers", "tags", "keywords", "tag", "trigger", "labels",
-    "use cases", "use case", "when to use",
-})
+_TAG_LABELS: frozenset[str] = frozenset(
+    {
+        "triggers",
+        "tags",
+        "keywords",
+        "tag",
+        "trigger",
+        "labels",
+        "use cases",
+        "use case",
+        "when to use",
+    }
+)
 
-_BODY_LABELS: frozenset[str] = frozenset({
-    "instructions", "instruction", "prompt", "content", "body",
-    "usage", "details", "behavior", "behaviour", "directions",
-    "system prompt", "system", "template",
-})
+_BODY_LABELS: frozenset[str] = frozenset(
+    {
+        "instructions",
+        "instruction",
+        "prompt",
+        "content",
+        "body",
+        "usage",
+        "details",
+        "behavior",
+        "behaviour",
+        "directions",
+        "system prompt",
+        "system",
+        "template",
+    }
+)
 
 
 def _normalise_label(text: str) -> str:
@@ -85,11 +106,7 @@ def _split_into_skill_blocks(markdown: str) -> list[str]:
     blocks: list[str] = []
     for i, match in enumerate(boundary_matches):
         start = match.start()
-        end = (
-            boundary_matches[i + 1].start()
-            if i + 1 < len(boundary_matches)
-            else len(markdown)
-        )
+        end = boundary_matches[i + 1].start() if i + 1 < len(boundary_matches) else len(markdown)
         chunk = markdown[start:end].strip()
         # Remove trailing/leading horizontal rules between blocks
         chunk = re.sub(r"\n-{3,}\s*$", "", chunk).strip()
@@ -169,6 +186,7 @@ def _parse_sections(block: str) -> dict[str, str]:
 # Step 3 — extract structured fields from sections
 # ---------------------------------------------------------------------------
 
+
 def _match_section(sections: dict[str, str], labels: frozenset[str]) -> str | None:
     """Return the first section value whose normalised key is in *labels*."""
     for key, value in sections.items():
@@ -228,6 +246,7 @@ def _build_body(sections: dict[str, str], title: str) -> str:
 # Step 4 — assemble ParsedSkill
 # ---------------------------------------------------------------------------
 
+
 def _parse_skill_block(block: str) -> ParsedSkill | None:
     """Convert a raw skill block string into a ``ParsedSkill``.
 
@@ -263,6 +282,7 @@ def _parse_skill_block(block: str) -> ParsedSkill | None:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def parse_claude_skills_markdown(markdown: str) -> list[ParsedSkill]:
     """Parse a Claude skills markdown document into ``ParsedSkill`` objects.

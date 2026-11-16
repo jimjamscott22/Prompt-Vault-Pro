@@ -10,7 +10,8 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from database import init_db
-from routers import entries, bundles, imports, projects, search
+from routers import bundles, entries, imports, projects, search
+from services.entry_service import ProjectNotFoundError
 
 
 @asynccontextmanager
@@ -45,6 +46,15 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
     else:
         body = {"error": {"code": "http_error", "message": str(detail)}}
     return JSONResponse(status_code=exc.status_code, content=body, headers=exc.headers)
+
+
+@app.exception_handler(ProjectNotFoundError)
+async def project_not_found_handler(request: Request, exc: ProjectNotFoundError) -> JSONResponse:
+    """Return a 404 when an entry references an unknown project."""
+    return JSONResponse(
+        status_code=404,
+        content={"error": {"code": "not_found", "message": "Project not found"}},
+    )
 
 
 @app.exception_handler(RequestValidationError)

@@ -1,9 +1,9 @@
 """Project ORM model."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, DateTime
+from sqlalchemy import Column, DateTime, String, Text
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -14,7 +14,7 @@ def _uuid() -> str:
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Project(Base):

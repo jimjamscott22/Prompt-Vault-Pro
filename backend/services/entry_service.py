@@ -5,7 +5,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from models.entry import Entry, Tag
+from models.project import Project
 from schemas.entry import EntryCreate, EntryUpdate
+
+
+class ProjectNotFoundError(Exception):
+    """Raised when an entry references a project that does not exist."""
+
+    def __init__(self, project_id: str):
+        super().__init__(f"Project not found: {project_id}")
+        self.project_id = project_id
+
+
+async def _ensure_project_exists(session: AsyncSession, project_id: str | None) -> None:
+    """Raise ProjectNotFoundError if ``project_id`` is set but unknown."""
+    if project_id is None:
+        return
+    found = await session.scalar(select(Project.id).where(Project.id == project_id))
+    if found is None:
+        raise ProjectNotFoundError(project_id)
 
 
 async def _get_or_create_tags(session: AsyncSession, tag_names: list[str]) -> list[Tag]:
@@ -67,6 +85,7 @@ async def get_entry(session: AsyncSession, entry_id: str) -> Entry | None:
 
 async def create_entry(session: AsyncSession, data: EntryCreate) -> Entry:
     """Create a new entry with tags."""
+    await _ensure_project_exists(session, data.project_id)
     entry = Entry(
         title=data.title,
         body=data.body,
@@ -96,6 +115,7 @@ async def update_entry(session: AsyncSession, entry_id: str, data: EntryUpdate) 
         return None
 
     update_data = data.model_dump(exclude_unset=True)
+    await _ensure_project_exists(session, update_data.get("project_id"))
     tags_data = update_data.pop("tags", None)
 
     for field, value in update_data.items():

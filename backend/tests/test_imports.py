@@ -1,10 +1,10 @@
 """Tests for Claude skills markdown import — parser and endpoint."""
 
 import io
+
 import pytest
 
-from services.import_service import parse_claude_skills_markdown, ParsedSkill
-
+from services.import_service import parse_claude_skills_markdown
 
 # ---------------------------------------------------------------------------
 # Parser unit tests

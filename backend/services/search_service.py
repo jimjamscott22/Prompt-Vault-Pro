@@ -2,11 +2,10 @@
 
 import logging
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select
 
 from database import is_mariadb
 from models.entry import Entry
@@ -36,7 +35,9 @@ async def search_entries(
         return await _fts_search(session, query, project_slug, language, entry_type, page, per_page)
     except (OperationalError, ProgrammingError) as exc:
         logger.warning("Full-text search failed (%s); falling back to LIKE", exc.orig)
-        return await _like_search(session, query, project_slug, language, entry_type, page, per_page)
+        return await _like_search(
+            session, query, project_slug, language, entry_type, page, per_page
+        )
 
 
 async def _fts_search(
@@ -144,10 +145,14 @@ async def _like_search(
     per_page: int,
 ) -> tuple[list[Entry], int]:
     """Fallback search using LIKE when FTS5 is unavailable."""
-    like_pattern = f"%{query}%"
+    escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    like_pattern = f"%{escaped}%"
     stmt = (
         select(Entry)
-        .where((Entry.title.ilike(like_pattern)) | (Entry.body.ilike(like_pattern)))
+        .where(
+            Entry.title.ilike(like_pattern, escape="\\")
+            | Entry.body.ilike(like_pattern, escape="\\")
+        )
         .options(selectinload(Entry.tags))
     )
 

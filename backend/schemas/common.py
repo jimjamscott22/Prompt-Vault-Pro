@@ -1,6 +1,6 @@
 """Common response envelope schemas."""
 
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -13,7 +13,7 @@ class Meta(BaseModel):
 
 class DataResponse(BaseModel):
     data: Any
-    meta: Optional[Meta] = None
+    meta: Meta | None = None
 
 
 class ErrorDetail(BaseModel):

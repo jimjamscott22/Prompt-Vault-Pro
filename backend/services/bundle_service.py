@@ -2,7 +2,7 @@
 
 import re
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -93,7 +93,10 @@ async def delete_bundle(session: AsyncSession, bundle_id: str) -> bool:
 
 
 async def add_entry_to_bundle(
-    session: AsyncSession, bundle_id: str, entry_id: str, position: int | None = None,
+    session: AsyncSession,
+    bundle_id: str,
+    entry_id: str,
+    position: int | None = None,
 ) -> bool:
     """Add an entry to a bundle.
 
@@ -120,7 +123,9 @@ async def add_entry_to_bundle(
     return True
 
 
-async def export_bundle(session: AsyncSession, bundle_id: str, fmt: str | None = None) -> str | None:
+async def export_bundle(
+    session: AsyncSession, bundle_id: str, fmt: str | None = None
+) -> str | None:
     """Export a bundle in the specified format."""
     bundle = await get_bundle(session, bundle_id)
     if not bundle:
@@ -135,13 +140,15 @@ async def export_bundle(session: AsyncSession, bundle_id: str, fmt: str | None =
         data = []
         for be in entries:
             e = be.entry
-            data.append({
-                "title": e.title,
-                "body": e.body,
-                "type": e.type,
-                "language": e.language,
-                "tags": [t.name for t in e.tags],
-            })
+            data.append(
+                {
+                    "title": e.title,
+                    "body": e.body,
+                    "type": e.type,
+                    "language": e.language,
+                    "tags": [t.name for t in e.tags],
+                }
+            )
         return json.dumps(data, indent=2)
 
     if export_format == "plaintext":

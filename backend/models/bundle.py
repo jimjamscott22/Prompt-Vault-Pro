@@ -1,9 +1,9 @@
 """Bundle and BundleEntry ORM models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -14,7 +14,7 @@ def _uuid() -> str:
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class BundleEntry(Base):
@@ -38,8 +38,12 @@ class Bundle(Base):
     id = Column(String(36), primary_key=True, default=_uuid)
     name = Column(String(255), nullable=False, unique=True)
     description = Column(Text, nullable=True)
-    export_format = Column(String(20), default="markdown")  # claude_md | markdown | json | plaintext
+    export_format = Column(
+        String(20), default="markdown"
+    )  # claude_md | markdown | json | plaintext
     created_at = Column(DateTime, default=_utcnow, nullable=False)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow, nullable=False)
 
-    bundle_entries = relationship("BundleEntry", back_populates="bundle", cascade="all, delete-orphan")
+    bundle_entries = relationship(
+        "BundleEntry", back_populates="bundle", cascade="all, delete-orphan"
+    )

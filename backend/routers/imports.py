@@ -38,10 +38,7 @@ async def import_claude_skills(
     if file is not None:
         # Validate MIME type / extension
         filename = file.filename or ""
-        if not (
-            filename.endswith(".md")
-            or (file.content_type or "").startswith("text/")
-        ):
+        if not (filename.endswith(".md") or (file.content_type or "").startswith("text/")):
             raise HTTPException(
                 status_code=422,
                 detail={

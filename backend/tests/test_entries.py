@@ -45,3 +45,27 @@ async def test_delete_entry(client):
 
     resp = await client.get(f"/api/v1/entries/{entry_id}")
     assert resp.status_code == 404
+
+
+async def test_list_rejects_invalid_pagination(client):
+    for path in ("/api/v1/entries", "/api/v1/bundles", "/api/v1/projects", "/api/v1/search?q=x"):
+        sep = "&" if "?" in path else "?"
+        for query in ("page=0", "per_page=0", "per_page=101"):
+            resp = await client.get(f"{path}{sep}{query}")
+            assert resp.status_code == 422, (path, query)
+
+
+async def test_entry_with_unknown_project_is_rejected(client):
+    resp = await client.post(
+        "/api/v1/entries",
+        json={"title": "t", "body": "b", "type": "prompt", "project_id": "nope"},
+    )
+    assert resp.status_code == 404
+    assert resp.json()["error"]["code"] == "not_found"
+
+    created = await client.post(
+        "/api/v1/entries", json={"title": "t", "body": "b", "type": "prompt"}
+    )
+    entry_id = created.json()["data"]["id"]
+    resp = await client.put(f"/api/v1/entries/{entry_id}", json={"project_id": "nope"})
+    assert resp.status_code == 404

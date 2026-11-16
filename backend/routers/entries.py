@@ -1,11 +1,11 @@
 """Entry CRUD router."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_session
 from schemas.common import DataResponse, Meta
-from schemas.entry import EntryCreate, EntryUpdate, EntryResponse
+from schemas.entry import EntryCreate, EntryResponse, EntryUpdate
 from services import entry_service
 
 router = APIRouter(tags=["entries"])
@@ -13,8 +13,8 @@ router = APIRouter(tags=["entries"])
 
 @router.get("/entries")
 async def list_entries(
-    page: int = 1,
-    per_page: int = 20,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
     project_id: str | None = None,
     type: str | None = None,
     language: str | None = None,
@@ -22,8 +22,12 @@ async def list_entries(
 ) -> DataResponse:
     """Return paginated entries with optional filters."""
     entries, total = await entry_service.list_entries(
-        session, page=page, per_page=per_page,
-        project_id=project_id, entry_type=type, language=language,
+        session,
+        page=page,
+        per_page=per_page,
+        project_id=project_id,
+        entry_type=type,
+        language=language,
     )
     return DataResponse(
         data=[EntryResponse.model_validate(e) for e in entries],
@@ -49,7 +53,9 @@ async def get_entry(
     """Return a single entry by ID."""
     entry = await entry_service.get_entry(session, entry_id)
     if not entry:
-        raise HTTPException(status_code=404, detail={"error": {"code": "not_found", "message": "Entry not found"}})
+        raise HTTPException(
+            status_code=404, detail={"error": {"code": "not_found", "message": "Entry not found"}}
+        )
     return DataResponse(data=EntryResponse.model_validate(entry))
 
 
@@ -62,7 +68,9 @@ async def update_entry(
     """Update an existing entry."""
     entry = await entry_service.update_entry(session, entry_id, data)
     if not entry:
-        raise HTTPException(status_code=404, detail={"error": {"code": "not_found", "message": "Entry not found"}})
+        raise HTTPException(
+            status_code=404, detail={"error": {"code": "not_found", "message": "Entry not found"}}
+        )
     return DataResponse(data=EntryResponse.model_validate(entry))
 
 
@@ -74,4 +82,6 @@ async def delete_entry(
     """Delete an entry by ID."""
     deleted = await entry_service.delete_entry(session, entry_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail={"error": {"code": "not_found", "message": "Entry not found"}})
+        raise HTTPException(
+            status_code=404, detail={"error": {"code": "not_found", "message": "Entry not found"}}
+        )
