@@ -239,7 +239,6 @@ function SidebarFolderList() {
                   borderRadius: '5px',
                   background: isActive ? 'var(--bg-surface)' : 'none',
                   transition: 'background 120ms ease',
-                  group: 'folder-row',
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
@@ -1073,8 +1072,12 @@ function AppShell() {
   const entriesState = useEntries()
   const projectsState = useProjects()
 
+  const { loading: projectsLoading, refetch: refetchProjects, ...projectsRest } = projectsState
+
   return (
-    <EntriesContext.Provider value={{ ...entriesState, ...projectsState }}>
+    <EntriesContext.Provider
+      value={{ ...entriesState, ...projectsRest, projectsLoading, refetchProjects }}
+    >
       <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-base)', overflow: 'hidden' }}>
         <Sidebar />
         <main

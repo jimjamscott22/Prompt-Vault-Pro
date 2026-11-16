@@ -94,9 +94,20 @@ async def add_entry_to_bundle(
     session: AsyncSession = Depends(get_session),
 ) -> DataResponse:
     """Add an entry to a bundle."""
-    added = await bundle_service.add_entry_to_bundle(
-        session, bundle_id, data.entry_id, data.position,
-    )
+    try:
+        added = await bundle_service.add_entry_to_bundle(
+            session, bundle_id, data.entry_id, data.position,
+        )
+    except bundle_service.EntryAlreadyInBundleError:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": {
+                    "code": "already_in_bundle",
+                    "message": "Entry is already in this bundle",
+                }
+            },
+        )
     if not added:
         raise HTTPException(
             status_code=404,

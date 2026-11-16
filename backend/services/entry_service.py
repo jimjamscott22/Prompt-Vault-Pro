@@ -112,8 +112,13 @@ async def update_entry(session: AsyncSession, entry_id: str, data: EntryUpdate) 
 
 
 async def delete_entry(session: AsyncSession, entry_id: str) -> bool:
-    """Delete an entry by ID."""
-    entry = await get_entry(session, entry_id)
+    """Delete an entry by ID, along with its bundle memberships."""
+    result = await session.execute(
+        select(Entry)
+        .where(Entry.id == entry_id)
+        .options(selectinload(Entry.tags), selectinload(Entry.bundle_entries))
+    )
+    entry = result.scalar_one_or_none()
     if not entry:
         return False
     await session.delete(entry)

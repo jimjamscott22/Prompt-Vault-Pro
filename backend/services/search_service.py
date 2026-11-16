@@ -1,12 +1,17 @@
 """Full-text search service — SQLite FTS5 or MariaDB FULLTEXT."""
 
+import logging
+
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 
 from database import is_mariadb
 from models.entry import Entry
+
+logger = logging.getLogger(__name__)
 
 
 async def search_entries(
@@ -18,14 +23,19 @@ async def search_entries(
     page: int = 1,
     per_page: int = 20,
 ) -> tuple[list[Entry], int]:
-    """Search entries using full-text search, falling back to LIKE."""
+    """Search entries using full-text search, falling back to LIKE.
+
+    The fallback only covers query-level failures (for example FTS5 syntax errors
+    from user input such as an unbalanced quote). Other errors propagate.
+    """
     try:
         if is_mariadb():
             return await _mariadb_fts_search(
                 session, query, project_slug, language, entry_type, page, per_page
             )
         return await _fts_search(session, query, project_slug, language, entry_type, page, per_page)
-    except Exception:
+    except (OperationalError, ProgrammingError) as exc:
+        logger.warning("Full-text search failed (%s); falling back to LIKE", exc.orig)
         return await _like_search(session, query, project_slug, language, entry_type, page, per_page)
 
 

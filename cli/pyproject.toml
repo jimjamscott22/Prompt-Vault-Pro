@@ -17,6 +17,10 @@ dependencies = [
 [project.scripts]
 pv = "main:app"
 
+[tool.setuptools]
+py-modules = ["main", "config"]
+packages = ["commands"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",

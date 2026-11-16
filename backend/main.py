@@ -2,8 +2,12 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from database import init_db
 from routers import entries, bundles, imports, projects, search
@@ -30,6 +34,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    """Return HTTP errors as ``{"error": {"code", "message"}}``."""
+    detail = exc.detail
+    if isinstance(detail, dict) and "error" in detail:
+        body = detail
+    else:
+        body = {"error": {"code": "http_error", "message": str(detail)}}
+    return JSONResponse(status_code=exc.status_code, content=body, headers=exc.headers)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """Return request validation errors as ``{"error": {"code", "message", "details"}}``."""
+    errors = jsonable_encoder(exc.errors(), custom_encoder={Exception: str})
+    message = "; ".join(
+        f"{'.'.join(str(p) for p in err['loc'] if p != 'body')}: {err['msg']}" for err in errors
+    )
+    return JSONResponse(
+        status_code=422,
+        content={"error": {"code": "validation_error", "message": message, "details": errors}},
+    )
+
 
 app.include_router(entries.router, prefix="/api/v1")
 app.include_router(bundles.router, prefix="/api/v1")

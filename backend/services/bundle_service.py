@@ -1,5 +1,7 @@
 """Business logic for bundle CRUD and export operations."""
 
+import re
+
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -7,6 +9,17 @@ from sqlalchemy.orm import selectinload
 from models.bundle import Bundle, BundleEntry
 from models.entry import Entry
 from schemas.bundle import BundleCreate, BundleUpdate
+
+
+class EntryAlreadyInBundleError(Exception):
+    """Raised when an entry is added to a bundle that already contains it."""
+
+
+def _fenced(body: str, lang: str = "") -> str:
+    """Wrap body in a code fence longer than any backtick run it contains."""
+    longest = max((len(run) for run in re.findall(r"`+", body)), default=0)
+    fence = "`" * max(3, longest + 1)
+    return f"{fence}{lang}\n{body}\n{fence}"
 
 
 async def list_bundles(
@@ -82,7 +95,11 @@ async def delete_bundle(session: AsyncSession, bundle_id: str) -> bool:
 async def add_entry_to_bundle(
     session: AsyncSession, bundle_id: str, entry_id: str, position: int | None = None,
 ) -> bool:
-    """Add an entry to a bundle."""
+    """Add an entry to a bundle.
+
+    Return False if the bundle or entry does not exist.
+    Raise EntryAlreadyInBundleError if the entry is already in the bundle.
+    """
     bundle = await get_bundle(session, bundle_id)
     if not bundle:
         return False
@@ -90,6 +107,9 @@ async def add_entry_to_bundle(
     entry_result = await session.execute(select(Entry).where(Entry.id == entry_id))
     if not entry_result.scalar_one_or_none():
         return False
+
+    if any(be.entry_id == entry_id for be in bundle.bundle_entries):
+        raise EntryAlreadyInBundleError(entry_id)
 
     if position is None:
         position = len(bundle.bundle_entries)
@@ -141,7 +161,7 @@ async def export_bundle(session: AsyncSession, bundle_id: str, fmt: str | None =
                 meta += f" | lang: {e.language}"
             if e.tags:
                 meta += f" | tags: {', '.join(t.name for t in e.tags)}"
-            parts.append(f"### {e.title}\n\n<!-- {meta} -->\n\n```{lang}\n{e.body}\n```")
+            parts.append(f"### {e.title}\n\n<!-- {meta} -->\n\n{_fenced(e.body, lang)}")
         return "\n\n".join(parts)
 
     # Default: markdown
@@ -149,5 +169,5 @@ async def export_bundle(session: AsyncSession, bundle_id: str, fmt: str | None =
     for be in entries:
         e = be.entry
         lang = e.language or ""
-        parts.append(f"## {e.title}\n\n```{lang}\n{e.body}\n```")
+        parts.append(f"## {e.title}\n\n{_fenced(e.body, lang)}")
     return "\n\n".join(parts)

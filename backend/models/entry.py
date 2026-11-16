@@ -54,4 +54,6 @@ class Entry(Base):
 
     project = relationship("Project", back_populates="entries")
     tags = relationship("Tag", secondary="entry_tags", back_populates="entries")
-    bundle_entries = relationship("BundleEntry", back_populates="entry")
+    bundle_entries = relationship(
+        "BundleEntry", back_populates="entry", cascade="all, delete-orphan"
+    )

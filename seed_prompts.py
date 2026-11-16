@@ -1,4 +1,7 @@
-"""Seed the prompt library with test/benchmark prompts."""
+"""Seed the prompt library with test/benchmark prompts.
+
+Start the backend at least once first so the database, tables, and search triggers exist.
+"""
 
 import sqlite3
 import uuid
@@ -109,11 +112,8 @@ def seed():
                 (entry_id, tag_id),
             )
 
-            # Keep FTS in sync
-            conn.execute(
-                "INSERT INTO entries_fts (rowid, title, body) SELECT rowid, title, body FROM entries WHERE id = ?",
-                (entry_id,),
-            )
+            # The search index (entries_fts) is kept in sync by triggers that the
+            # backend creates on startup, so no manual FTS insert is needed here.
 
             inserted += 1
 

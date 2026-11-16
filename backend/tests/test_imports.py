@@ -306,7 +306,7 @@ async def test_import_wrong_file_type_returns_422(client):
         files={"file": ("skills.pdf", io.BytesIO(b"binary data"), "application/pdf")},
     )
     assert resp.status_code == 422
-    error = resp.json()["detail"]["error"]
+    error = resp.json()["error"]
     assert error["code"] == "invalid_file_type"
 
 

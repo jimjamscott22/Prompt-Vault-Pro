@@ -101,7 +101,13 @@ async def init_db():
 
 
 async def _init_sqlite_fts(conn):
-    """Create FTS5 virtual table for SQLite full-text search."""
+    """Create the FTS5 virtual table, keep it in sync via triggers, and rebuild it.
+
+    ``entries_fts`` is an external-content table, so SQLite does not update it when
+    ``entries`` changes. The triggers below mirror every insert, update, and delete.
+    The rebuild on startup repairs databases whose index is empty or stale (for
+    example rows created before the triggers existed, or rowids renumbered by VACUUM).
+    """
     await conn.execute(
         text(
             """
@@ -110,6 +116,39 @@ async def _init_sqlite_fts(conn):
             """
         )
     )
+    await conn.execute(
+        text(
+            """
+            CREATE TRIGGER IF NOT EXISTS entries_fts_ai AFTER INSERT ON entries BEGIN
+                INSERT INTO entries_fts(rowid, title, body)
+                VALUES (new.rowid, new.title, new.body);
+            END
+            """
+        )
+    )
+    await conn.execute(
+        text(
+            """
+            CREATE TRIGGER IF NOT EXISTS entries_fts_ad AFTER DELETE ON entries BEGIN
+                INSERT INTO entries_fts(entries_fts, rowid, title, body)
+                VALUES ('delete', old.rowid, old.title, old.body);
+            END
+            """
+        )
+    )
+    await conn.execute(
+        text(
+            """
+            CREATE TRIGGER IF NOT EXISTS entries_fts_au AFTER UPDATE ON entries BEGIN
+                INSERT INTO entries_fts(entries_fts, rowid, title, body)
+                VALUES ('delete', old.rowid, old.title, old.body);
+                INSERT INTO entries_fts(rowid, title, body)
+                VALUES (new.rowid, new.title, new.body);
+            END
+            """
+        )
+    )
+    await conn.execute(text("INSERT INTO entries_fts(entries_fts) VALUES ('rebuild')"))
 
 
 async def _init_mariadb_fts(conn):
