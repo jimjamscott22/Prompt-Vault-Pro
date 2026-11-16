@@ -22,7 +22,7 @@ Common error codes: `not_found` (404), `already_in_bundle` (409), `validation_er
 plus import-specific codes such as `invalid_file_type` (see [import.md](import.md)).
 Validation errors also include a `details` array with the raw per-field errors.
 
-List endpoints take `page` (default 1) and `per_page` (default 20) query params.
+List endpoints take `page` (default 1, minimum 1) and `per_page` (default 20, range 1–100) query params. Values outside these ranges return 422.
 
 ## Entries
 
@@ -31,11 +31,13 @@ Query params: `page`, `per_page`, `project_id`, `type`, `language`
 
 ### `POST /entries`
 Body: `{ "title", "body", "type", "language?", "project_id?", "tags?": ["tag1"] }`
+Returns 404 (`not_found`, "Project not found") if `project_id` does not match an existing project.
 
 ### `GET /entries/{id}`
 
 ### `PUT /entries/{id}`
 Body: partial entry fields
+Returns 404 if the entry does not exist, or (`not_found`, "Project not found") if a supplied `project_id` does not match an existing project.
 
 ### `DELETE /entries/{id}`
 Returns 204. The entry is also removed from any bundles that contain it.

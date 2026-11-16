@@ -15,8 +15,9 @@ snippets, and context entries. It consists of three main components:
 - **SQLite by default** — keeps the tool portable with zero infrastructure. The
   database is `~/.config/promptvault/promptvault.db`, or the path in
   `PROMPTVAULT_DB_PATH`. `backend/database.py` also contains an optional
-  MariaDB/MySQL mode (`PROMPTVAULT_DB_ENGINE=mysql|mariadb`); it has no automated
-  tests, so treat it as experimental.
+  MariaDB/MySQL mode (`PROMPTVAULT_DB_ENGINE=mysql|mariadb`). Its driver (`aiomysql`)
+  is not installed by default; add it with `uv sync --extra mysql`. This mode has no
+  automated tests, so treat it as experimental.
 - **FTS5** — `entries_fts` is an external-content FTS5 table over `entries(title, body)`
   giving full-text search with BM25 ranking. Triggers on `entries` keep it in sync
   on insert, update, and delete, and it is rebuilt on every startup. Malformed
