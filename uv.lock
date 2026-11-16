@@ -320,6 +320,10 @@ provides-extras = ["dev"]
 name = "promptvaultpro"
 version = "0.1.0"
 source = { virtual = "." }
+dependencies = [
+    { name = "promptvault-cli" },
+    { name = "promptvaultpro-backend" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -330,6 +334,10 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [
+    { name = "promptvault-cli", editable = "cli" },
+    { name = "promptvaultpro-backend", virtual = "backend" },
+]
 
 [package.metadata.requires-dev]
 dev = [

@@ -9,7 +9,7 @@ AI Prompt & Snippet Library with Project Binding. A local-first, CLI-friendly pe
 - **Backend:** Python 3.11+, FastAPI, SQLAlchemy (async), SQLite with FTS5
 - **Frontend:** React 18, Vite, Tailwind CSS (installed, but the UI is styled with CSS variables in `index.css` and inline styles)
 - **CLI:** Python, Typer
-- **Package manager:** uv (backend, CLI), npm (frontend)
+- **Package manager:** uv for all Python (backend, CLI) — a single workspace at the repo root with one `uv.lock`; npm for the frontend
 - **Config:** TOML (`~/.config/promptvault/config.toml`) — read by the CLI only
 - **Testing:** pytest (backend). There are no frontend tests, and no ESLint config yet
 
@@ -21,7 +21,7 @@ AI Prompt & Snippet Library with Project Binding. A local-first, CLI-friendly pe
 promptvaultpro/
 ├── CLAUDE.md
 ├── README.md
-├── .venv/                       # shared venv at project root (activate from here)
+├── .venv/                       # created by `uv sync` at project root (no need to activate; use `uv run`)
 ├── backend/
 │   ├── main.py                  # FastAPI app entrypoint
 │   ├── database.py              # SQLAlchemy async engine + session
@@ -150,26 +150,37 @@ There is no `pv context` command yet. `pv add --project`, `pv export --bundle`, 
 ## Dev Commands
 
 ```bash
-# Backend (uv creates the .venv at the repo root and installs from pyproject.toml / uv.lock)
-cd backend && uv run uvicorn main:app --reload --port 8765
+# One-time Python setup (repo root): creates .venv, installs backend + CLI + dev tools from uv.lock
+uv sync
 
-# Frontend
+# Backend (run from the repo root; --directory is needed because modules are imported by top-level name)
+uv run --directory backend uvicorn main:app --reload --port 8765
+
+# Frontend (JavaScript, so npm)
 cd frontend && npm install
 npm run dev
 
-# CLI (inside an active virtualenv)
-uv pip install -e ./cli       # or: pip install -e ./cli
+# CLI
+uv run pv --help                     # no install step needed
+uv tool install --editable ./cli     # optional: put `pv` on PATH
 
 # Tests (from the repo root)
 uv run pytest backend/tests/
 
 # Lint
 uv run ruff check backend/    # has pre-existing findings; `--fix` resolves most
+
+# Add / remove a Python dependency (updates pyproject.toml and uv.lock)
+uv add --package promptvaultpro-backend <name>
+uv add --package promptvault-cli <name>
+uv remove --package <package> <name>
 ```
 
-There is no `backend/requirements.txt`, no frontend test files, and no ESLint config
-(`npm run lint` does not work yet). `npm run build` type-checks with `tsc` and builds
-`frontend/dist/`, which the backend does not serve.
+Use uv for every Python dependency and environment task: do not use `pip`,
+`python -m venv`, or `requirements.txt`, and commit `uv.lock` with any dependency change.
+There is no frontend test file and no ESLint config (`npm run lint` does not work yet).
+`npm run build` type-checks with `tsc` and builds `frontend/dist/`, which the backend does
+not serve.
 
 ---
 

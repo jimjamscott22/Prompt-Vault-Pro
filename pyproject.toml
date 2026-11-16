@@ -3,9 +3,17 @@ name = "promptvaultpro"
 version = "0.1.0"
 description = "AI Prompt & Snippet Library with Project Binding"
 requires-python = ">=3.11"
+dependencies = [
+    "promptvaultpro-backend",
+    "promptvault-cli",
+]
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+promptvaultpro-backend = { workspace = true }
+promptvault-cli = { workspace = true }
 
 [tool.uv.workspace]
 members = ["backend", "cli"]

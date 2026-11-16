@@ -5,10 +5,15 @@ The `pv` command is a thin client for the REST API, so the backend must be runni
 
 ## Installation
 
+From the repo root, after `uv sync`:
+
 ```bash
-pip install -e ./cli      # or, inside an active virtualenv: uv pip install -e ./cli
+uv run pv --help                     # no install step needed
+uv tool install --editable ./cli     # optional: put `pv` on your PATH
 pv --help
 ```
+
+If `pv` is not found after `uv tool install`, run `uv tool update-shell` once and restart your shell. The examples below assume `pv` is on your PATH; otherwise prefix them with `uv run`.
 
 ## Commands
 

@@ -9,16 +9,27 @@ AI Prompt & Snippet Library with Project Binding. A local-first, CLI-friendly pe
 - Node.js 18+
 - [uv](https://docs.astral.sh/uv/)
 
+### Install Python dependencies
+
+From the repo root:
+
+```bash
+uv sync
+```
+
+This creates `.venv` at the repo root and installs the backend, the CLI, and the dev tools (pytest, ruff) exactly as pinned in `uv.lock`. All Python commands below are run from the repo root with `uv run`; you never need to activate the virtualenv. Dependencies are declared in `backend/pyproject.toml` and `cli/pyproject.toml`; add one with `uv add --package promptvaultpro-backend <name>`.
+
 ### Run the backend
 
 ```bash
-cd backend
-uv run uvicorn main:app --reload --port 8765
+uv run --directory backend uvicorn main:app --reload --port 8765
 ```
 
-`uv` creates the virtual environment (`.venv` at the repo root) and installs the dependencies from `pyproject.toml` / `uv.lock` on first run. Interactive API docs are at <http://localhost:8765/docs>.
+`--directory backend` is required because the backend imports its modules by top-level name. Interactive API docs are at <http://localhost:8765/docs>.
 
 ### Run the frontend
+
+The frontend is a JavaScript project, so it uses npm (uv only manages Python).
 
 In another terminal:
 
@@ -47,11 +58,11 @@ There are no frontend tests yet.
 ### CLI
 
 ```bash
-pip install -e ./cli     # or: uv pip install -e ./cli (inside an active virtualenv)
-pv --help
+uv run pv --help                     # from the repo root, no install step needed
+uv tool install --editable ./cli     # optional: put `pv` on your PATH
 ```
 
-The CLI talks to the backend, so keep it running. See [docs/cli.md](docs/cli.md).
+After `uv tool install`, run `uv tool update-shell` once if `pv` is not found. The CLI talks to the backend, so keep it running. See [docs/cli.md](docs/cli.md).
 
 ## Limitations
 
