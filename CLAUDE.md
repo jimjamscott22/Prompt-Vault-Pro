@@ -240,3 +240,4 @@ The frontend uses a "Refined Terminal" dark aesthetic. Preserve these decisions 
 - `@docs/api.md` — full REST endpoint reference with request/response examples
 - `@docs/cli.md` — CLI usage guide and examples
 - `@docs/import.md` — Claude skills import guide (UI walkthrough, REST API, field mapping, parser behaviour)
+- `@docs/REVIEW-2026-11-16.md` — open findings from the full app review (backlog with locations and suggested order)
