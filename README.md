@@ -7,96 +7,58 @@ AI Prompt & Snippet Library with Project Binding. A local-first, CLI-friendly pe
 ### Prerequisites
 - Python 3.11 or later
 - Node.js 18+
-- [uv](https://docs.astral.sh/uv/) (recommended) or pip + venv
+- [uv](https://docs.astral.sh/uv/)
 
-### Setup
-
-#### Option 1: Using `uv` (Recommended)
+### Run the backend
 
 ```bash
-# Backend setup
 cd backend
-uv venv .venv
-source .venv/bin/activate  # or `.venv\Scripts\activate` on Windows
-uv pip install -r requirements.txt
-
-# Run backend
-uvicorn main:app --reload --port 8765
+uv run uvicorn main:app --reload --port 8765
 ```
+
+`uv` creates the virtual environment (`.venv` at the repo root) and installs the dependencies from `pyproject.toml` / `uv.lock` on first run. Interactive API docs are at <http://localhost:8765/docs>.
+
+### Run the frontend
 
 In another terminal:
 
 ```bash
-# Frontend setup
 cd frontend
 npm install
 npm run dev
 ```
 
-#### Option 2: Using `pip` + `venv`
+Open <http://localhost:5173>. The dev server proxies `/api` to the backend on port 8765.
+
+### Data location
+
+The SQLite database lives at `~/.config/promptvault/promptvault.db` and is created on first start. Set `PROMPTVAULT_DB_PATH` to use a different file.
+
+To load sample prompts, start the backend once (so the database exists), then run `uv run python seed_prompts.py` from the repo root.
+
+### Tests
 
 ```bash
-# Backend setup
-cd backend
-python -m venv .venv
-source .venv/bin/activate  # or `.venv\Scripts\activate` on Windows
-pip install -r requirements.txt
-
-# Run backend
-uvicorn main:app --reload --port 8765
+uv run pytest backend/tests/
 ```
 
-In another terminal:
+There are no frontend tests yet.
+
+### CLI
 
 ```bash
-# Frontend setup
-cd frontend
-npm install
-npm run dev
+pip install -e ./cli     # or: uv pip install -e ./cli (inside an active virtualenv)
+pv --help
 ```
 
-### Running in Production (Local Use)
+The CLI talks to the backend, so keep it running. See [docs/cli.md](docs/cli.md).
 
-Once you're done developing, you can build the frontend and serve everything from a single process:
+## Limitations
 
-```bash
-# Build the frontend
-cd frontend
-npm run build
-
-# Run the backend (serves API + built frontend)
-cd ../backend
-uv run uvicorn main:app --port 8765
-```
-
-To access from other devices on your network:
-
-```bash
-uv run uvicorn main:app --host 0.0.0.0 --port 8765
-```
-# Other Methods Below
-
-**Process manager** — If you want to keep them separate, use something like:
-
-**pm2** — **pm2** start "uvicorn main:app" --name backend (manages both, auto-restarts)
-**Honcho** / **foreman** — define a Procfile with both commands
-A simple shell script that starts both
-3. **systemd services** (Linux) — if you want them to auto-start on boot on your Pi, create a .service file for each. Most "set and forget" option.
-
-> **Tip:** Drop `--reload` for production use — it's a dev-only feature that watches for file changes.
-
-### CLI Installation
-
-```bash
-# Using uv
-uv pip install -e ./cli
-
-# Or using pip
-pip install -e ./cli
-```
-
-Then run: `pv --help`
+- **No authentication.** The API does not check API keys. Run it on `localhost` only, and do not bind it to `0.0.0.0` or otherwise expose it to a network you don't trust.
+- **No single-process production mode.** `npm run build` writes the frontend to `frontend/dist/`, but the backend does not serve it. Use the two dev servers above.
+- **CORS** allows only the Vite dev origin (`http://localhost:5173`).
 
 ---
 
-For detailed documentation, see [CLAUDE.md](CLAUDE.md). 
+For detailed documentation, see [CLAUDE.md](CLAUDE.md) and the [docs/](docs/) folder.

@@ -7,11 +7,11 @@ AI Prompt & Snippet Library with Project Binding. A local-first, CLI-friendly pe
 ## Stack
 
 - **Backend:** Python 3.11+, FastAPI, SQLAlchemy (async), SQLite with FTS5
-- **Frontend:** React 18, Vite, Tailwind CSS
+- **Frontend:** React 18, Vite, Tailwind CSS (installed, but the UI is styled with CSS variables in `index.css` and inline styles)
 - **CLI:** Python, Typer
-- **Package manager:** uv (backend), npm (frontend) — or pip + venv as alternative
-- **Config:** TOML (`~/.config/promptvault/config.toml`)
-- **Testing:** pytest (backend), Vitest (frontend)
+- **Package manager:** uv (backend, CLI), npm (frontend)
+- **Config:** TOML (`~/.config/promptvault/config.toml`) — read by the CLI only
+- **Testing:** pytest (backend). There are no frontend tests, and no ESLint config yet
 
 ---
 
@@ -41,7 +41,8 @@ promptvaultpro/
 │   │   ├── search_service.py
 │   │   └── import_service.py    # Claude skills markdown parser + bulk entry creator
 │   ├── schemas/                 # Pydantic request/response models
-│   └── auth.py                  # API key middleware
+│   ├── auth.py                  # API key middleware (NOT registered in main.py — no auth is enforced)
+│   └── tests/                   # pytest suite (entries, search, bundles, import, health)
 ├── cli/
 │   ├── main.py                  # Typer app entrypoint (pv command)
 │   ├── commands/
@@ -60,10 +61,12 @@ promptvaultpro/
 │   │   │   ├── EntriesPage.tsx  # Entry list with full CRUD (create, edit, delete, import)
 │   │   │   └── ResourcesPage.tsx # Curated prompt engineering resources / links
 │   │   ├── hooks/
-│   │   │   └── useEntries.ts    # Entries fetch hook with refetch
+│   │   │   ├── useEntries.ts    # Entries fetch hook with refetch
+│   │   │   └── useProjects.ts   # Projects ("folders") fetch/create/delete hook
 │   │   └── api/                 # Typed API client (fetch wrappers)
 │   │       ├── client.ts        # Base fetch wrapper (get, post, put, del, postForm)
 │   │       ├── entries.ts       # Entry API functions + TypeScript types
+│   │       ├── projects.ts      # Project API functions + TypeScript types
 │   │       └── imports.ts       # Import API function (claude-skills)
 │   └── vite.config.ts
 └── docs/
@@ -91,8 +94,8 @@ Core tables: `projects`, `entries`, `tags`, `entry_tags`, `bundles`, `bundle_ent
 ## API Conventions
 
 - Base URL: `http://localhost:8765/api/v1`
-- Auth: `X-API-Key` header (configurable, skip in local-only mode)
-- All responses: `{ data, meta }` envelope; errors: `{ error: { code, message } }`
+- Auth: none enforced (`backend/auth.py` is an unregistered, unfinished middleware). Run on localhost only
+- Successful responses: `{ data, meta }` envelope; errors: `{ error: { code, message } }` (validation errors also carry `details`). Handlers in `backend/main.py` enforce this shape
 - Pagination: `?page=1&per_page=20` query params on list endpoints
 - Search: `GET /search?q=<query>&project=<slug>&lang=<lang>&type=<type>`
 - Export: `GET /bundles/{id}/export?format=claude_md`
@@ -107,10 +110,17 @@ DELETE /entries/{id}
 
 GET    /bundles
 POST   /bundles
+GET    /bundles/{id}
+PUT    /bundles/{id}
+DELETE /bundles/{id}
+POST   /bundles/{id}/entries     # 409 if the entry is already in the bundle
 GET    /bundles/{id}/export
 
 GET    /projects
 POST   /projects
+GET    /projects/{id}
+PUT    /projects/{id}
+DELETE /projects/{id}
 
 GET    /search?q=
 
@@ -122,69 +132,44 @@ POST   /import/claude-skills     # multipart/form-data: file= or content=
 ## CLI Commands
 
 ```bash
-pv add                        # Interactive prompt to save a new entry
-pv add --type snippet --lang python --project myapp
-pv search "react hooks"       # Full-text search, outputs formatted context block
-pv search --project myapp --lang typescript
-pv export --bundle <name>     # Export a bundle to stdout or file
-pv export --bundle <name> --format claude_md --out ./CLAUDE.md
-pv context                    # Auto-detect project from cwd, surface relevant entries
-pv bundle create <name>       # Create a bundle interactively
+pv add                        # Prompts for title and body (or pass --title/--body)
+pv add --type snippet --lang python --project <project-id>
+pv search "react hooks"       # Full-text search, prints a results table
+pv search "hooks" --project myapp --lang typescript   # --project here is a slug
+pv export --bundle <bundle-id>                         # Export a bundle to stdout or file
+pv export --bundle <bundle-id> --format claude_md --out ./CLAUDE.md
+pv bundle create <name>
 pv bundle list
-pv bundle add <bundle> <entry-id>
+pv bundle add <bundle-id> <entry-id>
 ```
+
+There is no `pv context` command yet. `pv add --project`, `pv export --bundle`, and `pv bundle add` take full IDs, not names.
 
 ---
 
 ## Dev Commands
 
-### Using `uv` (recommended)
-
 ```bash
-# Backend (venv lives at project root, not inside backend/)
-uv venv .venv
-source .venv/bin/activate  # or `.venv\Scripts\activate` on Windows
-uv pip install -r backend/requirements.txt
-cd backend && uvicorn main:app --reload --port 8765
+# Backend (uv creates the .venv at the repo root and installs from pyproject.toml / uv.lock)
+cd backend && uv run uvicorn main:app --reload --port 8765
 
 # Frontend
 cd frontend && npm install
 npm run dev
 
-# CLI (local install)
-uv pip install -e ./cli
+# CLI (inside an active virtualenv)
+uv pip install -e ./cli       # or: pip install -e ./cli
 
-# Tests
+# Tests (from the repo root)
 uv run pytest backend/tests/
-npm run test --run            # frontend
 
 # Lint
-uv run ruff check backend/
-npm run lint                  # frontend (ESLint)
+uv run ruff check backend/    # has pre-existing findings; `--fix` resolves most
 ```
 
-### Using `pip` + `venv` (alternative)
-
-```bash
-# Backend (venv lives at project root, not inside backend/)
-python -m venv .venv && source .venv/bin/activate
-pip install -r backend/requirements.txt
-cd backend && uvicorn main:app --reload --port 8765
-
-# Frontend
-cd frontend && npm install
-npm run dev
-
-# CLI (local install)
-pip install -e ./cli
-
-# Tests
-pytest backend/tests/
-
-# Lint
-ruff check backend/
-npm run lint                  # frontend (ESLint)
-```
+There is no `backend/requirements.txt`, no frontend test files, and no ESLint config
+(`npm run lint` does not work yet). `npm run build` type-checks with `tsc` and builds
+`frontend/dist/`, which the backend does not serve.
 
 ---
 
@@ -204,10 +189,10 @@ npm run lint                  # frontend (ESLint)
 
 ## Key Behaviours
 
-- **Project auto-detection:** `pv context` reads the nearest `pyproject.toml`, `package.json`, or `.git` root to infer the active project slug, then surfaces matching entries
-- **CLAUDE.md export:** `pv export --format claude_md` renders a `## Context` section with selected entries formatted as fenced code blocks with metadata headers, ready to paste or append to a CLAUDE.md
-- **Local-only mode:** if `auth.local_only = true` in config, skip API key validation entirely — useful for single-machine personal setups
-- **FTS5 search:** queries hit the SQLite FTS5 virtual table; results ranked by BM25; fallback to LIKE if FTS5 unavailable
+- **Project binding:** entries can be bound to a project via `project_id`; the frontend calls projects "folders". There is no automatic project detection from the current directory
+- **CLAUDE.md export:** `pv export --format claude_md` renders a `## Context` section with selected entries formatted as fenced code blocks with metadata headers, ready to paste or append to a CLAUDE.md. Fences are lengthened when an entry body contains backticks
+- **No auth enforcement:** the API-key middleware in `backend/auth.py` is not registered, so every request is accepted. Do not add `config.toml` auth options to docs until it is wired up
+- **FTS5 search:** queries hit the SQLite FTS5 virtual table `entries_fts`, ranked by BM25. Triggers on `entries` keep the index in sync, and it is rebuilt on startup; any raw SQL that writes to `entries` is therefore indexed automatically. A malformed FTS query (e.g. an unbalanced quote) falls back to LIKE
 - **Claude skills import:** `POST /import/claude-skills` accepts a multipart form with either a `.md` file upload (`file=`) or pasted text (`content=`); the parser splits on H1 headings, maps Description/Instructions/Tags sections to entry fields, and bulk-creates `prompt`-type entries; see `docs/import.md` for field mapping and parser behaviour
 
 ---
