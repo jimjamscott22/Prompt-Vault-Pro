@@ -228,3 +228,6 @@ marimo/_lsp/
 __marimo__/
 /.cursor/hooks/state
 .claude/settings.local.json
+
+# graphify output
+graphify-out/

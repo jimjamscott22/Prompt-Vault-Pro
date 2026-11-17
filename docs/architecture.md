@@ -14,18 +14,16 @@ snippets, and context entries. It consists of three main components:
 
 - **SQLite by default** — keeps the tool portable with zero infrastructure. The
   database is `~/.config/promptvault/promptvault.db`, or the path in
-  `PROMPTVAULT_DB_PATH`. `backend/database.py` also contains an optional
-  MariaDB/MySQL mode (`PROMPTVAULT_DB_ENGINE=mysql|mariadb`). Its driver (`aiomysql`)
-  is not installed by default; add it with `uv sync --extra mysql`. This mode has no
-  automated tests, so treat it as experimental.
+  `PROMPTVAULT_DB_PATH`. SQLite is the only supported database.
 - **FTS5** — `entries_fts` is an external-content FTS5 table over `entries(title, body)`
   giving full-text search with BM25 ranking. Triggers on `entries` keep it in sync
   on insert, update, and delete, and it is rebuilt on every startup. Malformed
   queries fall back to a `LIKE` search.
 - **UUID primary keys** — avoids sequential IDs, supports future sync scenarios
 - **No ORM migrations** — tables are created with `Base.metadata.create_all`
-  (`CREATE TABLE IF NOT EXISTS` semantics). A `schema_version` table is created
-  but not yet used to track versions.
+  (`CREATE TABLE IF NOT EXISTS` semantics). The `schema_version` table records
+  the applied schema version (`SCHEMA_VERSION` in `backend/database.py`, currently 1)
+  on startup; bump it when a schema change needs a manual migration step.
 - **Async throughout** — all database operations use SQLAlchemy async sessions via
   aiosqlite
 - **Uniform error envelope** — handled errors (404, 409, 422, …) are returned as

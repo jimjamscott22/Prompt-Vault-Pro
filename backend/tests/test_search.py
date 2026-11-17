@@ -71,3 +71,36 @@ async def test_like_fallback_escapes_wildcards(client):
     # "%" is an FTS5 syntax error, forcing the LIKE fallback; "%" must match literally.
     ids = await _search_ids(client, "100%")
     assert len(ids) == 1
+
+
+async def _search(client, q, **params):
+    resp = await client.get("/api/v1/search", params={"q": q, **params})
+    assert resp.status_code == 200
+    return resp.json()
+
+
+@pytest.mark.asyncio
+async def test_search_paginates_with_total(client):
+    """FTS results are paged in SQL; total counts all matches, not just the page."""
+    ids = {await _create(client, f"T{i}", "pagetoken6", type="snippet") for i in range(5)}
+    await _create(client, "other", "pagetoken6", type="prompt")
+
+    seen = []
+    for page, expected in ((1, 2), (2, 2), (3, 1)):
+        body = await _search(client, "pagetoken6", type="snippet", per_page=2, page=page)
+        assert body["meta"]["total"] == 5
+        assert len(body["data"]) == expected
+        seen += [e["id"] for e in body["data"]]
+    assert set(seen) == ids and len(seen) == 5
+
+    assert (await _search(client, "pagetoken6", type="snippet", per_page=2, page=4))["data"] == []
+
+
+@pytest.mark.asyncio
+async def test_like_fallback_paginates_with_total(client):
+    """The LIKE fallback also pages in SQL and reports the full total."""
+    for i in range(3):
+        await _create(client, f"L{i}", f'"fallbacktoken7 quote {i}')
+    body = await _search(client, '"fallbacktoken7', per_page=2, page=2)
+    assert body["meta"]["total"] == 3
+    assert len(body["data"]) == 1

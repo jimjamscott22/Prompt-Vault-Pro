@@ -2,11 +2,16 @@
 
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
+
+if TYPE_CHECKING:
+    from models.bundle import BundleEntry
+    from models.project import Project
 
 
 def _uuid() -> str:
@@ -22,8 +27,8 @@ class EntryTag(Base):
 
     __tablename__ = "entry_tags"
 
-    entry_id = Column(String(36), ForeignKey("entries.id"), primary_key=True)
-    tag_id = Column(String(36), ForeignKey("tags.id"), primary_key=True)
+    entry_id: Mapped[str] = mapped_column(String(36), ForeignKey("entries.id"), primary_key=True)
+    tag_id: Mapped[str] = mapped_column(String(36), ForeignKey("tags.id"), primary_key=True)
 
 
 class Tag(Base):
@@ -31,11 +36,11 @@ class Tag(Base):
 
     __tablename__ = "tags"
 
-    id = Column(String(36), primary_key=True, default=_uuid)
-    name = Column(String(100), nullable=False, unique=True, index=True)
-    created_at = Column(DateTime, default=_utcnow, nullable=False)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
-    entries = relationship("Entry", secondary="entry_tags", back_populates="tags")
+    entries: Mapped[list["Entry"]] = relationship(secondary="entry_tags", back_populates="tags")
 
 
 class Entry(Base):
@@ -43,17 +48,17 @@ class Entry(Base):
 
     __tablename__ = "entries"
 
-    id = Column(String(36), primary_key=True, default=_uuid)
-    title = Column(String(255), nullable=False)
-    body = Column(Text, nullable=False)
-    type = Column(String(20), nullable=False, default="prompt")  # prompt | snippet | context
-    language = Column(String(50), nullable=True)
-    project_id = Column(String(36), ForeignKey("projects.id"), nullable=True)
-    created_at = Column(DateTime, default=_utcnow, nullable=False)
-    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow, nullable=False)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    title: Mapped[str] = mapped_column(String(255))
+    body: Mapped[str] = mapped_column(Text)
+    type: Mapped[str] = mapped_column(String(20), default="prompt")  # prompt | snippet | context
+    language: Mapped[str | None] = mapped_column(String(50))
+    project_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("projects.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, onupdate=_utcnow)
 
-    project = relationship("Project", back_populates="entries")
-    tags = relationship("Tag", secondary="entry_tags", back_populates="entries")
-    bundle_entries = relationship(
-        "BundleEntry", back_populates="entry", cascade="all, delete-orphan"
+    project: Mapped["Project | None"] = relationship(back_populates="entries")
+    tags: Mapped[list[Tag]] = relationship(secondary="entry_tags", back_populates="entries")
+    bundle_entries: Mapped[list["BundleEntry"]] = relationship(
+        back_populates="entry", cascade="all, delete-orphan"
     )

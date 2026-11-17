@@ -6,7 +6,6 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 # Use in-memory SQLite for tests
-os.environ["PROMPTVAULT_DB_ENGINE"] = "sqlite"
 os.environ["PROMPTVAULT_DB_PATH"] = ":memory:"
 
 from database import init_db  # noqa: E402

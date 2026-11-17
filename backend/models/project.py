@@ -2,11 +2,15 @@
 
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, DateTime, String, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy import DateTime, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
+
+if TYPE_CHECKING:
+    from models.entry import Entry
 
 
 def _uuid() -> str:
@@ -22,12 +26,12 @@ class Project(Base):
 
     __tablename__ = "projects"
 
-    id = Column(String(36), primary_key=True, default=_uuid)
-    name = Column(String(255), nullable=False)
-    slug = Column(String(255), nullable=False, unique=True, index=True)
-    description = Column(Text, nullable=True)
-    path = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=_utcnow, nullable=False)
-    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow, nullable=False)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    name: Mapped[str] = mapped_column(String(255))
+    slug: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    description: Mapped[str | None] = mapped_column(Text)
+    path: Mapped[str | None] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, onupdate=_utcnow)
 
-    entries = relationship("Entry", back_populates="project")
+    entries: Mapped[list["Entry"]] = relationship(back_populates="project")
